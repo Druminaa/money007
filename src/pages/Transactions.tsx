@@ -386,7 +386,6 @@ export default function Transactions() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
       <Sidebar />
-      <Sidebar isMobile={true} />
 
       <div className="lg:ml-20 transition-all duration-300">
         <div className="p-6 lg:p-8 relative">
@@ -404,49 +403,6 @@ export default function Transactions() {
                   <p className="text-gray-600">Track and manage all your financial transactions</p>
                 </div>
                 <div className="flex items-center space-x-4">
-                  {/* Search Section */}
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Search transactions..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white/80 backdrop-blur-sm"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    
-                    <button
-                      onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                      className={`px-4 py-2 rounded-lg border transition-all flex items-center space-x-2 ${
-                        showAdvancedSearch || Object.values(searchFilters).some(v => v && v !== 'all')
-                          ? 'bg-emerald-500 text-white border-emerald-500'
-                          : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Filter className="w-4 h-4" />
-                      <span>Filters</span>
-                    </button>
-                    
-                    {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        Clear all
-                      </button>
-                    )}
-                  </div>
-                  
                   <ExportMenu transactions={filteredTransactions} onPDFExport={() => handleDownloadPDF(filteredTransactions)} />
                   <motion.button
                     onClick={() => setShowModal(true)}
@@ -461,132 +417,166 @@ export default function Transactions() {
               </div>
             </motion.div>
 
-            {/* Advanced Search Panel */}
-            <AnimatePresence>
-              {showAdvancedSearch && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-6 overflow-hidden"
-                >
-                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Advanced Search</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {/* Transaction Type */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-                        <select
-                          value={searchFilters.type}
-                          onChange={(e) => setSearchFilters(prev => ({ ...prev, type: e.target.value as any }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        >
-                          <option value="all">All Types</option>
-                          <option value="income">Income</option>
-                          <option value="expense">Expense</option>
-                        </select>
-                      </div>
-                      
-                      {/* Category */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                        <input
-                          type="text"
-                          placeholder="Filter by category"
-                          value={searchFilters.category}
-                          onChange={(e) => setSearchFilters(prev => ({ ...prev, category: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      {/* Amount Range */}
-                      <div className="md:col-span-2 lg:col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Amount Range</label>
-                        <div className="flex space-x-2">
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            value={searchFilters.minAmount}
-                            onChange={(e) => setSearchFilters(prev => ({ ...prev, minAmount: e.target.value }))}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            value={searchFilters.maxAmount}
-                            onChange={(e) => setSearchFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Date Range */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
-                        <input
-                          type="date"
-                          value={searchFilters.dateFrom}
-                          onChange={(e) => setSearchFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
-                        <input
-                          type="date"
-                          value={searchFilters.dateTo}
-                          onChange={(e) => setSearchFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            {/* Date Filter Controls */}
+
+            {/* Search and Filter Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-6"
+              className="mb-6 space-y-4"
             >
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
+              {/* Search Bar */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search transactions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                      className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                        showAdvancedSearch || Object.values(searchFilters).some(v => v && v !== 'all')
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-300'
+                      }`}
+                    >
+                      <Filter className="w-4 h-4" />
+                      <span className="hidden sm:inline">Filters</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedSearch ? 'rotate-180' : ''}`} />
+                    </button>
+                    {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
+                      <button
+                        onClick={clearAllFilters}
+                        className="px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Advanced Search Filters */}
+                <AnimatePresence>
+                  {showAdvancedSearch && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-4 pt-4 border-t border-gray-200"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                          <select
+                            value={searchFilters.type}
+                            onChange={(e) => setSearchFilters({...searchFilters, type: e.target.value as any})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                          >
+                            <option value="all">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                          <input
+                            type="text"
+                            placeholder="Category..."
+                            value={searchFilters.category}
+                            onChange={(e) => setSearchFilters({...searchFilters, category: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Min Amount</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={searchFilters.minAmount}
+                            onChange={(e) => setSearchFilters({...searchFilters, minAmount: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Max Amount</label>
+                          <input
+                            type="number"
+                            placeholder="999999"
+                            value={searchFilters.maxAmount}
+                            onChange={(e) => setSearchFilters({...searchFilters, maxAmount: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                          <input
+                            type="date"
+                            value={searchFilters.dateFrom}
+                            onChange={(e) => setSearchFilters({...searchFilters, dateFrom: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                          <input
+                            type="date"
+                            value={searchFilters.dateTo}
+                            onChange={(e) => setSearchFilters({...searchFilters, dateTo: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Date Filter Controls */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex flex-wrap gap-2">
                     {(['all', 'daily', 'weekly', 'monthly', 'yearly'] as DatePeriod[]).map((period) => (
                       <button
                         key={period}
                         onClick={() => setDateFilter(period)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${dateFilter === period
+                        className={`px-3 py-2 lg:px-4 lg:py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 text-sm lg:text-base ${
+                          dateFilter === period
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-white text-gray-600 hover:bg-emerald-50'
-                          }`}
+                            : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-300'
+                        }`}
                       >
                         {period === 'all' ? <Filter className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
-                        <span>{t(period)}</span>
+                        <span className="hidden sm:inline">{t(period)}</span>
                       </button>
                     ))}
                   </div>
 
                   {dateFilter !== 'all' && (
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center justify-center lg:justify-end space-x-2 lg:space-x-4">
                       <button
                         onClick={() => navigateDate('prev')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-1"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Previous"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
 
-                      <div className="text-center min-w-[250px]">
-                        <h3 className="font-semibold text-gray-800">{formatDateRange()}</h3>
+                      <div className="text-center min-w-[200px] lg:min-w-[250px]">
+                        <h3 className="font-semibold text-gray-800 text-sm lg:text-base">{formatDateRange()}</h3>
                       </div>
 
                       <button
                         onClick={() => navigateDate('next')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-1"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Next"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
@@ -658,14 +648,21 @@ export default function Transactions() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 bg-pink-50">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {formatDateRange()}
+              <div className="p-4 lg:p-6 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h2 className="text-lg lg:text-xl font-semibold text-gray-800">
+                    {searchQuery ? `Search Results` : formatDateRange()}
                   </h2>
-                  <span className="text-sm text-gray-500">
-                    {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
-                  </span>
+                  <div className="flex items-center space-x-4">
+                    {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
+                      <span className="text-xs lg:text-sm text-emerald-600 font-medium">
+                        Filtered Results
+                      </span>
+                    )}
+                    <span className="text-sm text-gray-500">
+                      {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -681,44 +678,51 @@ export default function Transactions() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 + index * 0.05 }}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-4 lg:p-6 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-3 rounded-lg ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
-                          }`}>
-                          {transaction.type === 'income' ? (
-                            <TrendingUp className="w-6 h-6 text-green-600" />
-                          ) : (
-                            <TrendingDown className="w-6 h-6 text-red-600" />
-                          )}
+                      <div className="flex items-center space-x-3 lg:space-x-4 flex-1 min-w-0">
+                        <div className={`p-2 lg:p-3 rounded-lg flex-shrink-0 ${
+                          transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                        }`}>
+                          {(() => {
+                            const IconComponent = getCategoryIcon(transaction.category)
+                            return <IconComponent className={`w-5 h-5 lg:w-6 lg:h-6 ${
+                              transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                            }`} />
+                          })()}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-800">{transaction.description}</h3>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <span>{transaction.category}</span>
-                            <span>•</span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-800 text-sm lg:text-base truncate">
+                            {transaction.description}
+                          </h3>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs lg:text-sm text-gray-500">
+                            <span className="truncate">{transaction.category}</span>
+                            <span className="hidden sm:inline">•</span>
                             <span>{formatDate(transaction.date)}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
                         <div className="text-right">
-                          <span className={`text-lg font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                            }`}>
+                          <span className={`text-sm lg:text-lg font-bold ${
+                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                          }`}>
                             {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
                           </span>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1 lg:space-x-2">
                           <button
                             onClick={() => handleEdit(transaction)}
-                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                            className="p-1.5 lg:p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Edit"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(transaction.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                            className="p-1.5 lg:p-2 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

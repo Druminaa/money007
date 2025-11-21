@@ -19,7 +19,8 @@ import {
   TrendingDown,
   X,
   Phone,
-  Mail
+  Mail,
+  ChevronDown
 } from 'lucide-react'
 
 type LoanType = 'borrowed' | 'lent'
@@ -61,6 +62,7 @@ export default function BorrowLoan() {
     installments: '',
     paidAmount: ''
   })
+  const [showCategoryGrid, setShowCategoryGrid] = useState(false)
 
   const categories = [
     { value: 'personal', label: 'Personal Loan', icon: '👤' },
@@ -105,6 +107,7 @@ export default function BorrowLoan() {
   const resetForm = () => {
     setShowModal(false)
     setSelectedLoan(null)
+    setShowCategoryGrid(false)
     setFormData({ 
       type: 'borrowed', 
       category: 'personal', 
@@ -175,10 +178,10 @@ export default function BorrowLoan() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <Sidebar />
+      <Sidebar isMobile={true} />
       
       <div className="lg:ml-20 transition-all duration-300">
-        <div className="p-4 lg:p-6 relative">
+        <div className="p-4 lg:p-6 pt-16 lg:pt-6 relative">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/5 to-indigo-400/5 rounded-3xl"></div>
           <div className="relative z-10 max-w-7xl mx-auto">
             
@@ -469,18 +472,19 @@ export default function BorrowLoan() {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
                   >
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
+                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <div className="p-2 bg-white/20 rounded-lg">
                             <Plus className="w-6 h-6 text-white" />
                           </div>
                           <div>
-                            <h2 className="text-lg font-bold text-white">
-                              {selectedLoan ? 'Edit Record' : 'Add Record'}
+                            <h2 className="text-xl font-bold text-white">
+                              {selectedLoan ? 'Edit Record' : 'Add New Record'}
                             </h2>
+                            <p className="text-blue-100 text-sm">Track your borrowing and lending</p>
                           </div>
                         </div>
                         <button
@@ -492,39 +496,47 @@ export default function BorrowLoan() {
                       </div>
                     </div>
                     
-                    <form onSubmit={handleSubmit} className="p-4 space-y-4">
+                    <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                      {/* Type Selection */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">Transaction Type</label>
                         <div className="grid grid-cols-2 gap-3">
-                          <button
+                          <motion.button
                             type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => setFormData({...formData, type: 'borrowed'})}
-                            className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center space-x-2 ${
+                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-2 ${
                               formData.type === 'borrowed'
-                                ? 'border-red-500 bg-red-50 text-red-700'
-                                : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                ? 'border-red-500 bg-red-50 text-red-700 shadow-md'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
                             }`}
                           >
-                            <ArrowDownLeft className="w-4 h-4" />
-                            <span className="font-medium text-sm">I Borrowed</span>
-                          </button>
-                          <button
+                            <ArrowDownLeft className="w-6 h-6" />
+                            <span className="font-semibold text-sm">I Borrowed</span>
+                            <span className="text-xs opacity-75">Money I owe</span>
+                          </motion.button>
+                          <motion.button
                             type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => setFormData({...formData, type: 'lent'})}
-                            className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center space-x-2 ${
+                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-2 ${
                               formData.type === 'lent'
-                                ? 'border-green-500 bg-green-50 text-green-700'
-                                : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                ? 'border-green-500 bg-green-50 text-green-700 shadow-md'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
                             }`}
                           >
-                            <ArrowUpRight className="w-4 h-4" />
-                            <span className="font-medium text-sm">I Lent</span>
-                          </button>
+                            <ArrowUpRight className="w-6 h-6" />
+                            <span className="font-semibold text-sm">I Lent</span>
+                            <span className="text-xs opacity-75">Money owed to me</span>
+                          </motion.button>
                         </div>
                       </div>
 
+                      {/* Amount */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Amount</label>
                         <div className="relative">
                           <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                           <input
@@ -532,90 +544,141 @@ export default function BorrowLoan() {
                             step="0.01"
                             value={formData.amount}
                             onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-lg font-medium"
                             placeholder="0.00"
                             required
                           />
                         </div>
                       </div>
 
+                      {/* Category */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select
-                          value={formData.category}
-                          onChange={(e) => setFormData({...formData, category: e.target.value as LoanCategory})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          required
-                        >
-                          {categories.map((category) => (
-                            <option key={category.value} value={category.value}>
-                              {category.icon} {category.label}
-                            </option>
-                          ))}
-                        </select>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setShowCategoryGrid(!showCategoryGrid)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-left flex items-center justify-between bg-white"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">{categories.find(c => c.value === formData.category)?.icon}</span>
+                              <span className="font-medium">{categories.find(c => c.value === formData.category)?.label}</span>
+                            </div>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCategoryGrid ? 'rotate-180' : ''}`} />
+                          </button>
+                          
+                          <AnimatePresence>
+                            {showCategoryGrid && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-3"
+                              >
+                                <div className="grid grid-cols-2 gap-2">
+                                  {categories.map((category) => (
+                                    <motion.button
+                                      key={category.value}
+                                      type="button"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      onClick={() => {
+                                        setFormData({...formData, category: category.value as LoanCategory})
+                                        setShowCategoryGrid(false)
+                                      }}
+                                      className={`p-3 rounded-lg border transition-all flex items-center space-x-2 text-sm ${
+                                        formData.category === category.value
+                                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <span className="text-base">{category.icon}</span>
+                                      <span className="font-medium truncate">{category.label}</span>
+                                    </motion.button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
 
+                      {/* Person Name */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Person Name</label>
-                        <input
-                          type="text"
-                          value={formData.person}
-                          onChange={(e) => setFormData({...formData, person: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          placeholder="Enter person's name"
-                          required
-                        />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Person Name</label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                          <input
+                            type="text"
+                            value={formData.person}
+                            onChange={(e) => setFormData({...formData, person: e.target.value})}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Enter person's name"
+                            required
+                          />
+                        </div>
                       </div>
 
+                      {/* Description */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <input
-                          type="text"
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                        <textarea
                           value={formData.description}
                           onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                           placeholder="What was this loan for?"
+                          rows={3}
                         />
                       </div>
 
+                      {/* Due Date */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Due Date (Optional)</label>
                         <div className="relative">
                           <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                           <input
                             type="date"
                             value={formData.dueDate}
                             onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                           />
                         </div>
                       </div>
 
+                      {/* Contact */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                        <input
-                          type="text"
-                          value={formData.contact}
-                          onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          placeholder="Phone or email"
-                        />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Contact (Optional)</label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                          <input
+                            type="text"
+                            value={formData.contact}
+                            onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Phone number or email"
+                          />
+                        </div>
                       </div>
 
-                      <div className="flex space-x-2 pt-3">
-                        <button
+                      {/* Action Buttons */}
+                      <div className="flex space-x-3 pt-4">
+                        <motion.button
                           type="button"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={resetForm}
-                          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                          className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
                         >
                           Cancel
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                           type="submit"
-                          className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-colors text-sm font-medium"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-medium shadow-lg"
                         >
-                          {selectedLoan ? 'Update' : 'Add'} Record
-                        </button>
+                          {selectedLoan ? 'Update Record' : 'Add Record'}
+                        </motion.button>
                       </div>
                     </form>
                   </motion.div>

@@ -10,6 +10,7 @@ const translations = {
     analytics: 'Analytics',
     budget: 'Budget Planner',
     goals: 'Goals',
+    borrowLoan: 'Borrow & Lend',
     settings: 'Settings',
     
     // Common
@@ -83,7 +84,7 @@ const translations = {
     moneyManager: 'MONEY MANAGER',
     financialTransactionReport: 'Financial Transaction Report',
     generatedOn: 'Generated on',
-    financialOverview: 'FINANCIAL OVERVIEW',
+    financialOverviewPDF: 'FINANCIAL OVERVIEW',
     netBalance: 'NET BALANCE',
     topExpenseCategories: 'TOP EXPENSE CATEGORIES',
     transactionDetails: 'TRANSACTION DETAILS',
@@ -99,6 +100,7 @@ const translations = {
     analytics: 'विश्लेषण',
     budget: 'बजट योजना',
     goals: 'लक्ष्य',
+    borrowLoan: 'उधार और कर्ज',
     settings: 'सेटिंग्स',
     
     // Common
@@ -172,7 +174,7 @@ const translations = {
     moneyManager: 'मनी मैनेजर',
     financialTransactionReport: 'वित्तीय लेन-देन रिपोर्ट',
     generatedOn: 'पर जेनरेट किया गया',
-    financialOverview: 'वित्तीय अवलोकन',
+    financialOverviewPDF: 'वित्तीय अवलोकन',
     netBalance: 'नेट बैलेंस',
     topExpenseCategories: 'शीर्ष व्यय श्रेणियां',
     transactionDetails: 'लेन-देन विवरण',
@@ -188,6 +190,7 @@ const translations = {
     analytics: 'વિશ્લેષણ',
     budget: 'બજેટ યોજના',
     goals: 'લક્ષ્યો',
+    borrowLoan: 'ઉધાર અને કર્જ',
     settings: 'સેટિંગ્સ',
     
     // Common
@@ -261,7 +264,7 @@ const translations = {
     moneyManager: 'મની મેનેજર',
     financialTransactionReport: 'ફાઇનાન્સિયલ ટ્રાન્ઝેક્શન રિપોર્ટ',
     generatedOn: 'પર જનરેટ કર્યું',
-    financialOverview: 'ફાઇનાન્સિયલ ઓવરવ્યુ',
+    financialOverviewPDF: 'ફાઇનાન્સિયલ ઓવરવ્યુ',
     netBalance: 'નેટ બેલેન્સ',
     topExpenseCategories: 'ટોચની ખર્ચ વર્ગો',
     transactionDetails: 'લેણ-દેણ વિગતો',
@@ -277,6 +280,7 @@ const translations = {
     analytics: 'विश्लेषण',
     budget: 'अंदाजपत्रक योजना',
     goals: 'उद्दिष्टे',
+    borrowLoan: 'उधार आणि कर्ज',
     settings: 'सेटिंग्ज',
     
     // Common
@@ -350,7 +354,7 @@ const translations = {
     moneyManager: 'मनी मॅनेजर',
     financialTransactionReport: 'आर्थिक व्यवहार अहवाल',
     generatedOn: 'वर तयार केले',
-    financialOverview: 'आर्थिक आढावा',
+    financialOverviewPDF: 'आर्थिक आढावा',
     netBalance: 'निव्वळ शिल्लक',
     topExpenseCategories: 'शीर्ष खर्च वर्ग',
     transactionDetails: 'व्यवहार तपशील',
