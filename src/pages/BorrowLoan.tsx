@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from '../components/Sidebar'
+import { animations, staggerContainer } from '../utils/animations'
 import { 
   Plus, 
   Edit, 
@@ -177,7 +178,11 @@ export default function BorrowLoan() {
   }, [loans])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <motion.div 
+      {...animations.pageTransition}
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"
+    >
+      <Sidebar />
       <Sidebar isMobile={true} />
       
       <div className="lg:ml-20 transition-all duration-300">
@@ -205,11 +210,12 @@ export default function BorrowLoan() {
                 </div>
                 <motion.button
                   onClick={() => setShowModal(true)}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
+                  {...animations.button}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
                 >
-                  <Plus className="w-5 h-5" />
+                  <motion.div {...animations.icon}>
+                    <Plus className="w-5 h-5" />
+                  </motion.div>
                   <span>Add Record</span>
                 </motion.button>
               </div>
@@ -222,55 +228,136 @@ export default function BorrowLoan() {
               transition={{ delay: 0.1 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
             >
-              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border border-red-200">
+              <motion.div 
+                {...animations.card}
+                className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border border-red-200"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-red-700 mb-1 font-medium">Active Borrowed</p>
-                    <p className="text-2xl font-bold text-red-600">₹{summary.activeBorrowed.toFixed(0)}</p>
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-sm text-red-700 mb-1 font-medium"
+                    >
+                      Active Borrowed
+                    </motion.p>
+                    <motion.p 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3, type: "spring" }}
+                      className="text-2xl font-bold text-red-600"
+                    >
+                      ₹{summary.activeBorrowed.toFixed(0)}
+                    </motion.p>
                   </div>
-                  <div className="p-3 bg-red-200 rounded-lg">
+                  <motion.div 
+                    className="p-3 bg-red-200 rounded-lg"
+                    {...animations.icon}
+                  >
                     <TrendingDown className="w-6 h-6 text-red-600" />
-                  </div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+              <motion.div 
+                {...animations.card}
+                transition={{ delay: 0.1 }}
+                className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-700 mb-1 font-medium">Active Lent</p>
-                    <p className="text-2xl font-bold text-green-600">₹{summary.activeLent.toFixed(0)}</p>
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-sm text-green-700 mb-1 font-medium"
+                    >
+                      Active Lent
+                    </motion.p>
+                    <motion.p 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: "spring" }}
+                      className="text-2xl font-bold text-green-600"
+                    >
+                      ₹{summary.activeLent.toFixed(0)}
+                    </motion.p>
                   </div>
-                  <div className="p-3 bg-green-200 rounded-lg">
+                  <motion.div 
+                    className="p-3 bg-green-200 rounded-lg"
+                    {...animations.icon}
+                  >
                     <TrendingUp className="w-6 h-6 text-green-600" />
-                  </div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+              <motion.div 
+                {...animations.card}
+                transition={{ delay: 0.2 }}
+                className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-700 mb-1 font-medium">Net Position</p>
-                    <p className={`text-2xl font-bold ${summary.netPosition >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-sm text-blue-700 mb-1 font-medium"
+                    >
+                      Net Position
+                    </motion.p>
+                    <motion.p 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.5, type: "spring" }}
+                      className={`text-2xl font-bold ${summary.netPosition >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
                       {summary.netPosition >= 0 ? '+' : '-'}₹{Math.abs(summary.netPosition).toFixed(0)}
-                    </p>
+                    </motion.p>
                   </div>
-                  <div className="p-3 bg-blue-200 rounded-lg">
+                  <motion.div 
+                    className="p-3 bg-blue-200 rounded-lg"
+                    {...animations.icon}
+                  >
                     <DollarSign className="w-6 h-6 text-blue-600" />
-                  </div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+              <motion.div 
+                {...animations.card}
+                transition={{ delay: 0.3 }}
+                className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-orange-700 mb-1 font-medium">Overdue Items</p>
-                    <p className="text-2xl font-bold text-orange-600">{summary.overdue}</p>
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      className="text-sm text-orange-700 mb-1 font-medium"
+                    >
+                      Overdue Items
+                    </motion.p>
+                    <motion.p 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.6, type: "spring" }}
+                      className="text-2xl font-bold text-orange-600"
+                    >
+                      {summary.overdue}
+                    </motion.p>
                   </div>
-                  <div className="p-3 bg-orange-200 rounded-lg">
+                  <motion.div 
+                    className="p-3 bg-orange-200 rounded-lg"
+                    {...animations.icon}
+                  >
                     <AlertCircle className="w-6 h-6 text-orange-600" />
-                  </div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
 
             {/* Search and Filters */}
@@ -335,12 +422,13 @@ export default function BorrowLoan() {
                   </div>
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">No Records Found</h3>
                   <p className="text-gray-500 mb-6">Start tracking your borrowing and lending activities</p>
-                  <button
+                  <motion.button
                     onClick={() => setShowModal(true)}
+                    {...animations.button}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Add First Record
-                  </button>
+                  </motion.button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -435,28 +523,31 @@ export default function BorrowLoan() {
 
                       <div className="flex justify-end space-x-2 pt-4 border-t border-gray-100">
                         {loan.status === 'active' && (
-                          <button
+                          <motion.button
                             onClick={() => markAsCompleted(loan.id)}
+                            {...animations.button}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Mark as completed"
                           >
                             <CheckCircle className="w-4 h-4" />
-                          </button>
+                          </motion.button>
                         )}
-                        <button
+                        <motion.button
                           onClick={() => editLoan(loan)}
+                          {...animations.button}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                           onClick={() => deleteLoan(loan.id)}
+                          {...animations.button}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </motion.button>
                       </div>
                     </motion.div>
                   ))}
@@ -689,6 +780,6 @@ export default function BorrowLoan() {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

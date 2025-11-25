@@ -7,6 +7,7 @@ import { CustomCategory, useCustomCategories } from '../hooks/useCustomCategorie
 import Sidebar from '../components/Sidebar'
 import { ExportMenu } from '../components/ExportMenu'
 import { generateTransactionsPDF } from './pdfGenerator'
+import { notificationService } from '../services/notificationService'
 
 import {
   Plus,
@@ -276,6 +277,13 @@ export default function Transactions() {
           date: formData.date
         })
         toast.success('Transaction added successfully!')
+        
+        // Send notification for new transaction
+        await notificationService.sendTransactionNotification(
+          formData.type,
+          amount,
+          finalCategory
+        )
       }
 
       // Reset form
@@ -384,8 +392,14 @@ export default function Transactions() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50"
+    >
       <Sidebar />
+      <Sidebar isMobile={true} />
 
       <div className="lg:ml-20 transition-all duration-300">
         <div className="p-6 lg:p-8 relative">
@@ -397,21 +411,21 @@ export default function Transactions() {
               transition={{ duration: 0.5 }}
               className="mb-8"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('transactions')}</h1>
-                  <p className="text-gray-600">Track and manage all your financial transactions</p>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">{t('transactions')}</h1>
+                  <p className="text-gray-600 text-sm lg:text-base">Track and manage all your financial transactions</p>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 lg:space-x-4">
                   <ExportMenu transactions={filteredTransactions} onPDFExport={() => handleDownloadPDF(filteredTransactions)} />
                   <motion.button
                     onClick={() => setShowModal(true)}
-                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+                    className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
                   >
-                    <Plus className="w-5 h-5" />
-                    <span>{t('addTransaction')}</span>
+                    <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                    <span className="text-sm lg:text-base">{t('addTransaction')}</span>
                   </motion.button>
                 </div>
               </div>
@@ -428,21 +442,31 @@ export default function Transactions() {
             >
               {/* Search Bar */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50">
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search transactions..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      className="w-full pl-9 lg:pl-10 pr-4 py-2.5 lg:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm lg:text-base"
                     />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <motion.button
                       onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                      className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 text-sm lg:text-base ${
                         showAdvancedSearch || Object.values(searchFilters).some(v => v && v !== 'all')
                           ? 'bg-emerald-600 text-white'
                           : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-300'
@@ -450,16 +474,28 @@ export default function Transactions() {
                     >
                       <Filter className="w-4 h-4" />
                       <span className="hidden sm:inline">Filters</span>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedSearch ? 'rotate-180' : ''}`} />
-                    </button>
-                    {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                      <motion.div
+                        animate={{ rotate: showAdvancedSearch ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
                       >
-                        Clear
-                      </button>
-                    )}
+                        <ChevronDown className="w-4 h-4" />
+                      </motion.div>
+                    </motion.button>
+                    <AnimatePresence>
+                      {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
+                        <motion.button
+                          onClick={clearAllFilters}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="px-3 lg:px-4 py-2.5 lg:py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium text-sm lg:text-base"
+                        >
+                          Clear
+                        </motion.button>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
@@ -472,7 +508,7 @@ export default function Transactions() {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-4 pt-4 border-t border-gray-200"
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                           <select
@@ -591,51 +627,51 @@ export default function Transactions() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8"
             >
               <motion.div
                 whileHover={{ scale: 1.02, y: -3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">{t('totalIncome')}</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{t('totalIncome')}</p>
+                    <p className="text-lg lg:text-2xl font-bold text-green-600 truncate">{formatCurrency(totalIncome)}</p>
                   </div>
-                  <div className="p-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl">
-                    <TrendingUp className="w-6 h-6 text-white" />
+                  <div className="p-2 lg:p-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                   </div>
                 </div>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.02, y: -3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">{t('totalExpenses')}</p>
-                    <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{t('totalExpenses')}</p>
+                    <p className="text-lg lg:text-2xl font-bold text-red-600 truncate">{formatCurrency(totalExpenses)}</p>
                   </div>
-                  <div className="p-3 bg-gradient-to-r from-red-400 to-pink-500 rounded-xl">
-                    <TrendingDown className="w-6 h-6 text-white" />
+                  <div className="p-2 lg:p-3 bg-gradient-to-r from-red-400 to-pink-500 rounded-xl flex-shrink-0">
+                    <TrendingDown className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                   </div>
                 </div>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.02, y: -3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300 sm:col-span-2 lg:col-span-1"
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">{t('balance')}</p>
-                    <p className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{t('balance')}</p>
+                    <p className={`text-lg lg:text-2xl font-bold truncate ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(balance)}
                     </p>
                   </div>
-                  <div className="p-3 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-xl">
-                    <DollarSign className="w-6 h-6 text-white" />
+                  <div className="p-2 lg:p-3 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-xl flex-shrink-0">
+                    <DollarSign className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                   </div>
                 </div>
               </motion.div>
@@ -762,7 +798,7 @@ export default function Transactions() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col mx-4"
             >
               <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4">
                 <div className="flex items-center justify-between">
@@ -792,7 +828,7 @@ export default function Transactions() {
               </div>
 
               <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-emerald-100">
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-4 lg:p-6 space-y-4 lg:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('type')}</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -848,140 +884,102 @@ export default function Transactions() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('category')}</label>
                   
-                  {/* Selected Category Display */}
-                  <motion.div
-                    onClick={() => setShowCategoryGrid(!showCategoryGrid)}
-                    className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-400 transition-all bg-gradient-to-r from-gray-50 to-white"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {formData.category ? (
-                      <div className="flex items-center space-x-3">
-                        {(() => {
-                          const selectedKey = (formData.type === 'income' ? incomeCategoryKeys : expenseCategoryKeys)
-                            .find(key => t(key) === formData.category) || 'other'
-                          const IconComponent = getCategoryIcon(selectedKey)
-                          return (
-                            <div className="p-2 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg">
-                              <IconComponent className="w-5 h-5 text-white" />
-                            </div>
-                          )
-                        })()}
-                        <span className="font-medium text-gray-800">{formData.category}</span>
-                        <div className="ml-auto">
-                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCategoryGrid ? 'rotate-180' : ''}`} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center space-x-2 text-gray-500">
-                        <Plus className="w-5 h-5" />
-                        <span>Choose a category</span>
-                        <ChevronDown className={`w-5 h-5 transition-transform ${showCategoryGrid ? 'rotate-180' : ''}`} />
-                      </div>
-                    )}
-                  </motion.div>
-
-                  {/* Creative Category Grid */}
-                  <AnimatePresence>
-                    {showCategoryGrid && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-3 overflow-hidden"
-                      >
-                        <div className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-emerald-100">
-                          <div className="grid grid-cols-3 gap-3 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
-                          {(formData.type === 'income' ? incomeCategoryKeys : expenseCategoryKeys).map((catKey, index) => {
-                            const IconComponent = getCategoryIcon(catKey)
-                            const gradients = [
-                              'from-red-400 to-pink-500',
-                              'from-blue-400 to-cyan-500', 
-                              'from-green-400 to-emerald-500',
-                              'from-yellow-400 to-orange-500',
-                              'from-purple-400 to-indigo-500',
-                              'from-pink-400 to-rose-500',
-                              'from-indigo-400 to-blue-500'
-                            ]
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryGrid(!showCategoryGrid)}
+                      className="w-full p-3 bg-white border border-gray-300 rounded-lg hover:border-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all flex items-center justify-between"
+                    >
+                      {formData.category ? (
+                        <div className="flex items-center space-x-2">
+                          {(() => {
+                            const selectedKey = (formData.type === 'income' ? incomeCategoryKeys : expenseCategoryKeys)
+                              .find(key => t(key) === formData.category) || 'other'
+                            const IconComponent = getCategoryIcon(selectedKey)
                             return (
-                              <motion.button
-                                key={catKey}
-                                type="button"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: index * 0.1 }}
-                                whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => {
-                                  setFormData(prev => ({ ...prev, category: t(catKey) }))
-                                  setShowCategoryGrid(false)
-                                  setShowCustomCategory(false)
-                                }}
-                                className={`p-3 rounded-xl transition-all duration-200 ${formData.category === t(catKey)
-                                    ? 'bg-white shadow-lg border-2 border-emerald-400'
-                                    : 'bg-white/70 hover:bg-white hover:shadow-md border border-gray-200'
-                                  }`}
-                              >
-                                <div className={`p-2 bg-gradient-to-r ${gradients[index % gradients.length]} rounded-lg mb-2 mx-auto w-fit`}>
-                                  <IconComponent className="w-4 h-4 text-white" />
-                                </div>
-                                <div className="text-xs font-medium text-gray-700">{t(catKey)}</div>
-                              </motion.button>
+                              <div className="p-1.5 bg-emerald-500 rounded-md">
+                                <IconComponent className="w-4 h-4 text-white" />
+                              </div>
                             )
-                          })}
-                          
-                          {/* Custom Categories */}
-                          {customCategories
-                            .filter(cat => cat.type === formData.type)
-                            .map((cat, index) => (
-                              <motion.button
-                                key={`custom-${cat.id}`}
-                                type="button"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => {
-                                  setFormData(prev => ({ ...prev, category: cat.name }))
-                                  setShowCategoryGrid(false)
-                                  setShowCustomCategory(false)
-                                }}
-                                className={`p-3 rounded-xl transition-all duration-200 ${formData.category === cat.name
-                                    ? 'bg-white shadow-lg border-2 border-emerald-400'
-                                    : 'bg-white/70 hover:bg-white hover:shadow-md border border-gray-200'
-                                  }`}
-                              >
-                                <div className="p-2 bg-gradient-to-r from-gray-400 to-slate-500 rounded-lg mb-2 mx-auto w-fit">
-                                  <MoreHorizontal className="w-4 h-4 text-white" />
-                                </div>
-                                <div className="text-xs font-medium text-gray-700">{cat.name}</div>
-                              </motion.button>
-                            ))}
-                          
-                          {/* Add Custom Category */}
-                          <motion.button
-                            type="button"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, category: 'Other' }))
-                              setShowCustomCategory(true)
-                              setShowCategoryGrid(false)
-                            }}
-                            className="p-3 rounded-xl bg-gradient-to-r from-emerald-100 to-teal-100 hover:from-emerald-200 hover:to-teal-200 border-2 border-dashed border-emerald-300 transition-all duration-200"
-                          >
-                            <div className="p-2 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg mb-2 mx-auto w-fit">
-                              <Plus className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="text-xs font-medium text-emerald-700">Custom</div>
-                          </motion.button>
-                          </div>
+                          })()}
+                          <span className="font-medium text-gray-800">{formData.category}</span>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      ) : (
+                        <span className="text-gray-500">Select category</span>
+                      )}
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCategoryGrid ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {showCategoryGrid && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                        >
+                          <div className="p-2">
+                            {(formData.type === 'income' ? incomeCategoryKeys : expenseCategoryKeys).map((catKey) => {
+                              const IconComponent = getCategoryIcon(catKey)
+                              return (
+                                <button
+                                  key={catKey}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData(prev => ({ ...prev, category: t(catKey) }))
+                                    setShowCategoryGrid(false)
+                                    setShowCustomCategory(false)
+                                  }}
+                                  className="w-full p-3 text-left hover:bg-emerald-50 rounded-lg transition-colors flex items-center space-x-3"
+                                >
+                                  <div className="p-1.5 bg-emerald-500 rounded-md">
+                                    <IconComponent className="w-4 h-4 text-white" />
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-700">{t(catKey)}</span>
+                                </button>
+                              )
+                            })}
+                          
+                            
+                            {customCategories
+                              .filter(cat => cat.type === formData.type)
+                              .map((cat) => (
+                                <button
+                                  key={`custom-${cat.id}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData(prev => ({ ...prev, category: cat.name }))
+                                    setShowCategoryGrid(false)
+                                    setShowCustomCategory(false)
+                                  }}
+                                  className="w-full p-3 text-left hover:bg-emerald-50 rounded-lg transition-colors flex items-center space-x-3"
+                                >
+                                  <div className="p-1.5 bg-gray-500 rounded-md">
+                                    <MoreHorizontal className="w-4 h-4 text-white" />
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-700">{cat.name}</span>
+                                </button>
+                              ))}
+                            
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, category: 'Other' }))
+                                setShowCustomCategory(true)
+                                setShowCategoryGrid(false)
+                              }}
+                              className="w-full p-3 text-left hover:bg-emerald-50 rounded-lg transition-colors flex items-center space-x-3 border-t border-gray-100 mt-2 pt-3"
+                            >
+                              <div className="p-1.5 bg-emerald-500 rounded-md">
+                                <Plus className="w-4 h-4 text-white" />
+                              </div>
+                              <span className="text-sm font-medium text-emerald-700">Add Custom Category</span>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
                 <AnimatePresence>
@@ -1033,7 +1031,7 @@ export default function Transactions() {
                   </div>
                 </div>
 
-                <div className="flex space-x-2 pt-3">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -1043,15 +1041,15 @@ export default function Transactions() {
                       setShowCustomCategory(false)
                       setCustomCategory('')
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                   >
                     {t('cancel')}
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors text-sm font-medium"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors text-sm font-medium"
                   >
-                    {editingTransaction ? t('update') : t('add')} {t('transactions')}
+                    {editingTransaction ? t('update') : t('add')}
                   </button>
                 </div>
               </form>
@@ -1060,6 +1058,6 @@ export default function Transactions() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }

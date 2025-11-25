@@ -4,6 +4,7 @@ import { useTransactions, useBudgets, useGoals, useProfile } from '../hooks/useS
 import { useAuth } from '../context/AuthContext'
 import { usePreferences } from '../context/PreferencesContext'
 import Sidebar from '../components/Sidebar'
+import { animations, staggerContainer } from '../utils/animations'
 import { 
   TrendingUp, 
   TrendingDown,
@@ -285,7 +286,10 @@ export default function Dashboard() {
   }, [stats, financialHealth, goals, budgets, transactions])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <motion.div 
+      {...animations.pageTransition}
+      className="min-h-screen bg-gray-50"
+    >
       <Sidebar />
       <Sidebar isMobile={true} />
       
@@ -412,9 +416,12 @@ export default function Dashboard() {
                 <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-600 mb-2">No Active Goals</h3>
                 <p className="text-sm text-gray-500 mb-4">Set your first financial goal to start tracking progress</p>
-                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300">
+                <motion.button 
+                  {...animations.button}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300"
+                >
                   Create Goal
-                </button>
+                </motion.button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -484,9 +491,12 @@ export default function Dashboard() {
             
             {goals.filter(g => !g.completed).length > 6 && (
               <div className="text-center mt-6">
-                <button className="text-indigo-600 hover:text-indigo-700 font-medium text-sm">
+                <motion.button 
+                  {...animations.button}
+                  className="text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+                >
                   View All Goals ({goals.filter(g => !g.completed).length})
-                </button>
+                </motion.button>
               </div>
             )}
           </motion.div>
@@ -508,9 +518,12 @@ export default function Dashboard() {
                     </div>
                     <h2 className="text-xl font-semibold text-gray-800">{t('recentTransactions')}</h2>
                   </div>
-                  <button className="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                  <motion.button 
+                    {...animations.button}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                  >
                     View All
-                  </button>
+                  </motion.button>
                 </div>
               </div>
               <div className="divide-y divide-gray-100">
@@ -951,6 +964,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

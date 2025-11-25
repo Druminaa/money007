@@ -39,6 +39,7 @@ export interface Goal {
   deadline: string
   completed: boolean
   completed_at?: string
+  category?: string
   created_at: string
   updated_at: string
 }
