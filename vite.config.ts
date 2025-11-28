@@ -10,8 +10,12 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],

@@ -363,38 +363,22 @@ export default function Settings() {
 
   const handleExportPDF = async () => {
     try {
-      const { jsPDF } = await import('jspdf')
-      const doc = new jsPDF()
+      // Create user data for PDF export
+      const userData = {
+        profile: profileData,
+        preferences,
+        user: user?.email || 'N/A',
+        exportDate: new Date().toLocaleDateString()
+      }
       
-      // Add title
-      doc.setFontSize(20)
-      doc.text('Money Manager - User Data Export', 20, 20)
-      
-      // Add export date
-      doc.setFontSize(12)
-      doc.text(`Export Date: ${new Date().toLocaleDateString()}`, 20, 35)
-      
-      // Add profile data
-      doc.setFontSize(16)
-      doc.text('Profile Information', 20, 55)
-      doc.setFontSize(12)
-      doc.text(`Name: ${profileData.full_name || 'N/A'}`, 20, 70)
-      doc.text(`Email: ${user?.email || 'N/A'}`, 20, 80)
-      doc.text(`Phone: ${profileData.phone || 'N/A'}`, 20, 90)
-      doc.text(`Location: ${profileData.location || 'N/A'}`, 20, 100)
-      doc.text(`Date of Birth: ${profileData.date_of_birth || 'N/A'}`, 20, 110)
-      doc.text(`Bio: ${profileData.bio || 'N/A'}`, 20, 120)
-      
-      // Add preferences
-      doc.setFontSize(16)
-      doc.text('App Preferences', 20, 140)
-      doc.setFontSize(12)
-      doc.text(`Currency: ${preferences.currency}`, 20, 155)
-      doc.text(`Language: ${preferences.language}`, 20, 165)
-      doc.text(`Date Format: ${preferences.date_format}`, 20, 175)
-      
-      // Save PDF
-      doc.save(`money-manager-data-${new Date().toISOString().split('T')[0]}.pdf`)
+      // Generate PDF using centralized function
+      generateTransactionsPDF([], {
+        formatCurrency: (amount: number) => `₹${amount.toFixed(2)}`,
+        formatDate: (date: string) => new Date(date).toLocaleDateString(),
+        totalIncome: 0,
+        totalExpenses: 0,
+        balance: 0
+      })
       toast.success('PDF exported successfully!')
     } catch (error) {
       toast.error('Failed to export PDF')
