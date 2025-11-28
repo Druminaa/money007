@@ -41,13 +41,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signup = async (email: string, password: string) => {
+    // First check if user exists but is unconfirmed
+    const { data: existingUser } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password: 'dummy' // This will fail but tells us if user exists
+    })
+    
     const { data, error } = await supabase.auth.signUp({ 
       email, 
       password,
       options: {
-        emailRedirectTo: undefined
+        emailRedirectTo: `${window.location.origin}/confirm`
       }
     })
+    
+    // If signup fails because user exists, try to resend confirmation
+    if (error?.message?.includes('User already registered')) {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email
+      })
+      
+      if (!resendError) {
+        throw new Error('Email already exists. Confirmation email has been resent.')
+      }
+    }
     
     if (error) throw error
     return data

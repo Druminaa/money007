@@ -93,14 +93,26 @@ export default function SignUp() {
       console.log('Signup result:', result)
       
       if (result?.user) {
-        toast.success('Account created successfully!')
-        navigate('/dashboard')
-      } else {
-        toast.success('Account created! Please check your email for confirmation.')
+        if (result.user.email_confirmed_at) {
+          toast.success('Account created successfully!')
+          navigate('/dashboard')
+        } else {
+          toast.success('Account created! Please check your email for confirmation.')
+          navigate('/confirm')
+        }
       }
     } catch (error: any) {
       console.error('Signup error:', error)
-      const errorMessage = error.message || 'Failed to create account'
+      let errorMessage = error.message || 'Failed to create account'
+      
+      // Handle specific error for existing unconfirmed user
+      if (error.message?.includes('User already registered')) {
+        errorMessage = 'Email already exists. Check your email for confirmation or resend it.'
+        toast.error(errorMessage)
+        navigate('/resend-confirmation')
+        return
+      }
+      
       toast.error(errorMessage)
       setErrors({ general: errorMessage })
     } finally {
