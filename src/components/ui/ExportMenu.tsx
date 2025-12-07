@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useToast } from '../context/ToastContext'
-import { usePreferences } from '../context/PreferencesContext'
+import { useToast } from '../../context/ToastContext'
+import { usePreferences } from '../../context/PreferencesContext'
 import { jsPDF } from 'jspdf'
 import { saveAs } from 'file-saver'
 import { 

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '../context/ToastContext'
 import { useGoals } from '../hooks/useSupabase'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/layout/Sidebar'
 import { 
   Plus, 
   Edit, 

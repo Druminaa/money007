@@ -410,15 +410,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }
 
   const formatCurrency = (amount: number): string => {
-    const currencyConfig = {
-      INR: { symbol: '₹', locale: 'en-IN' },
-      USD: { symbol: '$', locale: 'en-US' },
-      EUR: { symbol: '€', locale: 'de-DE' },
-      GBP: { symbol: '£', locale: 'en-GB' }
-    }
-    
-    const config = currencyConfig[preferences.currency as keyof typeof currencyConfig] || currencyConfig.INR
-    return `${config.symbol}${amount.toLocaleString(config.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   const formatDate = (date: string | Date): string => {

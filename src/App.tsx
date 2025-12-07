@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import { PreferencesProvider } from './context/PreferencesContext'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
+import Layout from './components/layout/Layout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
@@ -24,7 +26,7 @@ interface ProtectedRouteProps {
 
 function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user } = useAuth()
-  return user ? <>{children}</> : <Navigate to="/login" />
+  return user ? <Layout>{children}</Layout> : <Navigate to="/login" />
 }
 
 function PublicRoute({ children }: ProtectedRouteProps) {
@@ -34,10 +36,11 @@ function PublicRoute({ children }: ProtectedRouteProps) {
 
 function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <PreferencesProvider>
-          <Router>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <PreferencesProvider>
+            <Router>
           <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50">
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -86,14 +89,16 @@ function App() {
                 <Settings />
               </ProtectedRoute>
             } />
+
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </div>
-          </Router>
-        </PreferencesProvider>
-      </AuthProvider>
-    </ToastProvider>
+            </Router>
+          </PreferencesProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   )
 }
 

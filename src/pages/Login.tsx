@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
-import { RateLimiter } from '../utils/security'
+import { rateLimiter, RATE_LIMITS } from '../utils/rateLimiter'
+import { validateEmail, sanitizeInput } from '../utils/validation'
 
 interface FormData {
   email: string
@@ -29,15 +30,21 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const rateLimiter = new RateLimiter()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
-    // Rate limiting - 5 attempts per 15 minutes
-    const clientIP = 'user-session' // In production, use actual IP
-    if (!rateLimiter.isAllowed(clientIP, 5, 15 * 60 * 1000)) {
-      toast.error('Too many login attempts. Please try again in 15 minutes.')
+    // Validate email format
+    if (!validateEmail(formData.email)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+    
+    // Rate limiting
+    const rateLimitKey = `login:${formData.email}`
+    if (rateLimiter.isRateLimited(rateLimitKey, RATE_LIMITS.LOGIN)) {
+      const remainingTime = Math.ceil(rateLimiter.getRemainingTime(rateLimitKey, RATE_LIMITS.LOGIN) / 60000)
+      toast.error(`Too many login attempts. Please try again in ${remainingTime} minutes.`)
       return
     }
     
@@ -58,10 +65,12 @@ export default function Login() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
+    const sanitizedValue = type === 'text' || type === 'email' ? sanitizeInput(value) : value
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : sanitizedValue
     }))
+    if (errors.general) setErrors({})
   }
 
   return (

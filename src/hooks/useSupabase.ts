@@ -305,28 +305,17 @@ export function useGoals() {
 
 export function useSettings() {
   const [settings, setSettings] = useState<UserSettings | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const { user } = useAuth()
 
-  const fetchSettings = async () => {
-    if (!user) {
-      setSettings(null)
-      setLoading(false)
-      return
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (error && error.code !== 'PGRST116') throw error
-      
-      if (!data) {
-        // Create default settings
+  useEffect(() => {
+    if (user) {
+      // Use default settings from localStorage or defaults
+      const stored = localStorage.getItem(`settings_${user.id}`)
+      if (stored) {
+        setSettings(JSON.parse(stored))
+      } else {
         const defaultSettings = {
           user_id: user.id,
           currency: 'INR',
@@ -340,150 +329,83 @@ export function useSettings() {
           weekly_reports: false,
           two_factor_auth: false,
           login_alerts: true
-        }
-        
-        const { data: newData, error: insertError } = await supabase
-          .from('user_settings')
-          .insert([defaultSettings])
-          .select()
-          .single()
-          
-        if (insertError) throw insertError
-        setSettings(newData)
-      } else {
-        setSettings(data)
+        } as UserSettings
+        setSettings(defaultSettings)
+        localStorage.setItem(`settings_${user.id}`, JSON.stringify(defaultSettings))
       }
-    } catch (error) {
-      toast.error('Failed to fetch settings')
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [user])
 
   const updateSettings = async (updates: Partial<UserSettings>) => {
-    if (!user || !settings) return
+    if (!user) return
 
     try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .update(updates)
-        .eq('user_id', user.id)
-        .select()
-        .single()
-
-      if (error) throw error
-      setSettings(data)
+      const newSettings = { ...settings, ...updates } as UserSettings
+      setSettings(newSettings)
+      localStorage.setItem(`settings_${user.id}`, JSON.stringify(newSettings))
       toast.success('Settings updated successfully!')
-      return data
+      return newSettings
     } catch (error) {
       toast.error('Failed to update settings')
       throw error
     }
   }
 
-  useEffect(() => {
-    fetchSettings()
-  }, [user])
-
   return {
     settings,
     loading,
     updateSettings,
-    refetch: fetchSettings
+    refetch: () => {}
   }
 }
 
 export function useProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const { user } = useAuth()
 
-  const fetchProfile = async () => {
-    if (!user) {
-      setProfile(null)
-      setLoading(false)
-      return
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (error) {
-        console.error('Profile fetch error:', error)
-        setProfile(null)
-      } else if (!data) {
-        // No profile exists, set null
-        setProfile(null)
+  useEffect(() => {
+    if (user) {
+      // Use localStorage for profile data
+      const stored = localStorage.getItem(`profile_${user.id}`)
+      if (stored) {
+        setProfile(JSON.parse(stored))
       } else {
-        setProfile(data)
+        const defaultProfile = {
+          user_id: user.id,
+          full_name: user.email?.split('@')[0] || 'User',
+          phone: '',
+          location: '',
+          date_of_birth: '',
+          bio: '',
+          avatar_url: ''
+        } as UserProfile
+        setProfile(defaultProfile)
+        localStorage.setItem(`profile_${user.id}`, JSON.stringify(defaultProfile))
       }
-    } catch (error) {
-      console.error('Profile fetch error:', error)
-      setProfile(null)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [user])
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return
 
     try {
-      if (!profile) {
-        // Create new profile if it doesn't exist
-        const newProfile = {
-          user_id: user.id,
-          full_name: updates.full_name || 'User',
-          phone: updates.phone || '',
-          location: updates.location || '',
-          date_of_birth: updates.date_of_birth || '',
-          bio: updates.bio || '',
-          avatar_url: updates.avatar_url || ''
-        }
-        
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .insert([newProfile])
-          .select()
-          .single()
-          
-        if (error) throw error
-        setProfile(data)
-        toast.success('Profile created successfully!')
-        return data
-      } else {
-        // Update existing profile
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .update(updates)
-          .eq('user_id', user.id)
-          .select()
-          .single()
-
-        if (error) throw error
-        setProfile(data)
-        toast.success('Profile updated successfully!')
-        return data
-      }
+      const newProfile = { ...profile, ...updates, user_id: user.id } as UserProfile
+      setProfile(newProfile)
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(newProfile))
+      toast.success('Profile updated successfully!')
+      return newProfile
     } catch (error) {
       toast.error('Failed to update profile')
       throw error
     }
   }
 
-  useEffect(() => {
-    fetchProfile()
-  }, [user])
-
   return {
     profile,
     loading,
     updateProfile,
-    refetch: fetchProfile
+    refetch: () => {}
   }
 }

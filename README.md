@@ -13,8 +13,9 @@ A modern, responsive Money Manager application built with React, Tailwind CSS, a
 ### 🧭 Dashboard Layout
 - **Animated Sidebar**: Collapsible with hover expansion
 - **Profile Section**: User avatar and name
-- **Navigation Links**: Dashboard, Transactions, Analytics, Budget Planner, Goals
+- **Navigation Links**: Dashboard, Transactions, Analytics, Budget, Goals, Borrow/Loan
 - **Settings & Logout**: Easy access buttons
+- **Export Features**: PDF and data export functionality
 - **Smooth Animations**: CSS transitions and Framer Motion
 
 ### 📱 Responsive Design
@@ -30,12 +31,18 @@ A modern, responsive Money Manager application built with React, Tailwind CSS, a
 
 ## Tech Stack
 
-- **Frontend**: React 18 + Vite
+- **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion
 - **Routing**: React Router DOM
 - **Icons**: Lucide React
 - **Forms**: React Hook Form
+- **Backend**: Supabase (Authentication & Database)
+- **State Management**: Zustand
+- **Data Fetching**: React Query
+- **Charts**: Recharts
+- **PDF Generation**: jsPDF
+- **Local Storage**: Dexie (IndexedDB)
 
 ## Getting Started
 
@@ -56,12 +63,18 @@ cd money-manager
 npm install
 ```
 
-3. Start the development server:
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
+```
+
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+5. Open your browser and navigate to `http://localhost:5173`
 
 ### Build for Production
 
@@ -73,19 +86,54 @@ npm run build
 
 ```
 src/
-├── components/
-│   └── Sidebar.jsx          # Animated sidebar component
-├── context/
-│   └── AuthContext.jsx      # Authentication context
-├── pages/
-│   ├── Login.jsx           # Login page
-│   ├── SignUp.jsx          # Sign up page
-│   ├── ForgotPassword.jsx  # Password reset page
-│   └── Dashboard.jsx       # Main dashboard
-├── App.jsx                 # Main app component
-├── main.jsx               # React entry point
-└── index.css              # Global styles
+├── components/           # Reusable UI components
+│   ├── ExportMenu.tsx
+│   ├── Sidebar.tsx
+│   └── Toast.tsx
+├── context/             # React context providers
+│   ├── AuthContext.tsx
+│   ├── PreferencesContext.tsx
+│   └── ToastContext.tsx
+├── hooks/               # Custom React hooks
+│   ├── useCustomCategories.ts
+│   └── useSupabase.ts
+├── lib/                 # External library configurations
+│   └── supabase.ts
+├── pages/               # Page components
+│   ├── Analytics.tsx
+│   ├── BorrowLoan.tsx
+│   ├── Budget.tsx
+│   ├── Dashboard.tsx
+│   ├── EmailConfirmation.tsx
+│   ├── ForgotPassword.tsx
+│   ├── Goals.tsx
+│   ├── Landing.tsx
+│   ├── Login.tsx
+│   ├── NotFound.tsx
+│   ├── pdfGenerator.ts
+│   ├── ResendConfirmation.tsx
+│   ├── ResetPassword.tsx
+│   ├── Settings.tsx
+│   ├── SignUp.tsx
+│   └── Transactions.tsx
+├── services/            # API and external services
+│   └── notificationService.ts
+├── types/               # TypeScript type definitions
+│   └── index.ts
+├── utils/               # Utility functions
+│   ├── animations.ts
+│   └── security.ts
+├── App.tsx              # Main app component
+├── index.css            # Global styles
+└── main.tsx             # React entry point
 
+docs/                    # Documentation and guides
+├── database/            # Database schema and setup
+├── email-templates/     # Email template files
+└── guides/              # Setup and configuration guides
+
+public/                  # Static assets
+└── _redirects           # Netlify redirects
 ```
 
 ## Features Overview

@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
-import { validatePassword, sanitizeInput, validateEmail } from '../utils/security'
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle, XCircle } from 'lucide-react'
+import { validatePassword, sanitizeInput, validateEmail } from '../utils/validation'
+import { rateLimiter, RATE_LIMITS } from '../utils/rateLimiter'
 
 interface FormData {
   fullName: string
@@ -32,6 +33,7 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [loading, setLoading] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState<{ valid: boolean; errors: string[] }>({ valid: false, errors: [] })
   
   const { signup } = useAuth()
   const navigate = useNavigate()
@@ -62,7 +64,7 @@ export default function SignUp() {
       newErrors.password = 'Password is required'
     } else {
       const passwordValidation = validatePassword(formData.password)
-      if (!passwordValidation.isValid) {
+      if (!passwordValidation.valid) {
         newErrors.password = passwordValidation.errors[0]
       }
     }
@@ -82,6 +84,13 @@ export default function SignUp() {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      return
+    }
+
+    // Rate limiting
+    const rateLimitKey = `signup:${formData.email}`
+    if (rateLimiter.isRateLimited(rateLimitKey, RATE_LIMITS.SIGNUP)) {
+      toast.error('Too many signup attempts. Please try again later.')
       return
     }
 
@@ -123,13 +132,18 @@ export default function SignUp() {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     
-    // Sanitize input for name field
-    const sanitizedValue = name === 'fullName' ? sanitizeInput(value) : value
+    // Sanitize input for name and email fields
+    const sanitizedValue = (name === 'fullName' || name === 'email') ? sanitizeInput(value) : value
     
     setFormData(prev => ({
       ...prev,
       [name]: sanitizedValue
     }))
+    
+    // Update password strength indicator
+    if (name === 'password') {
+      setPasswordStrength(validatePassword(sanitizedValue))
+    }
     
     // Clear error when user starts typing
     if (errors[name as keyof Errors]) {
@@ -222,6 +236,27 @@ export default function SignUp() {
               </button>
             </div>
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            {formData.password && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordStrength.valid ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className={passwordStrength.valid ? 'text-green-600' : 'text-red-600'}>
+                    {passwordStrength.valid ? 'Strong password' : 'Weak password'}
+                  </span>
+                </div>
+                {!passwordStrength.valid && passwordStrength.errors.length > 0 && (
+                  <ul className="text-xs text-gray-600 ml-6 space-y-0.5">
+                    {passwordStrength.errors.map((error, idx) => (
+                      <li key={idx}>• {error}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           <div>

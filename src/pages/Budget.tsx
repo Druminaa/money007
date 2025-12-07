@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useBudgets, useTransactions } from '../hooks/useSupabase'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/layout/Sidebar'
 import { 
   Plus, 
   Edit, 
@@ -133,7 +133,6 @@ export default function Budget() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       <Sidebar />
-      <Sidebar isMobile={true} />
       
       <div className="lg:ml-20 transition-all duration-300">
         <div className="p-6 lg:p-8 relative">

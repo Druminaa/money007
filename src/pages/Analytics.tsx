@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/layout/Sidebar'
 import { useTransactions, useBudgets, useGoals } from '../hooks/useSupabase'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 import { 

@@ -4,16 +4,16 @@ import { useToast } from '../context/ToastContext'
 import { Transaction, useTransactions } from '../hooks/useSupabase'
 import { usePreferences } from '../context/PreferencesContext'
 import { CustomCategory, useCustomCategories } from '../hooks/useCustomCategories'
-import Sidebar from '../components/Sidebar'
-import { ExportMenu } from '../components/ExportMenu'
-import { generateTransactionsPDF } from './pdfGenerator'
+import Sidebar from '../components/layout/Sidebar'
+import { ExportMenu } from '../components/ui/ExportMenu'
+import { generateTransactionsPDF } from '../utils/pdfGenerator'
 import { notificationService } from '../services/notificationService'
+import { validateAmount, validateDescription, validateCategory, validateDate, sanitizeInput } from '../utils/validation'
 
 import {
   Plus,
   Edit,
   Trash2,
-  DollarSign,
   TrendingUp,
   TrendingDown,
   CreditCard,
@@ -35,7 +35,8 @@ import {
   Award,
   MoreHorizontal,
   ChevronDown,
-  Search
+  Banknote,
+  Wallet
 } from 'lucide-react'
 
 interface TransactionForm {
@@ -44,6 +45,7 @@ interface TransactionForm {
   category: string
   description: string
   date: string
+  paymentMethod: 'cash' | 'card' | 'bank'
 }
 
 type DatePeriod = 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -65,21 +67,13 @@ export default function Transactions() {
     type: 'expense',
     category: '',
     description: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    paymentMethod: 'cash'
   })
   const [customCategory, setCustomCategory] = useState('')
   const [showCustomCategory, setShowCustomCategory] = useState(false)
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
-  const [searchFilters, setSearchFilters] = useState({
-    type: 'all' as 'all' | 'income' | 'expense',
-    category: '',
-    minAmount: '',
-    maxAmount: '',
-    dateFrom: '',
-    dateTo: ''
-  })
+
 
   const { toast } = useToast()
 
@@ -149,61 +143,27 @@ export default function Transactions() {
       })
     }
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
-      filtered = filtered.filter(t => 
-        t.description?.toLowerCase().includes(query) ||
-        t.category?.toLowerCase().includes(query) ||
-        t.amount?.toString().includes(query) ||
-        formatCurrency(Number(t.amount)).toLowerCase().includes(query)
-      )
-    }
 
-    // Apply advanced filters
-    if (searchFilters.type !== 'all') {
-      filtered = filtered.filter(t => t.type === searchFilters.type)
-    }
-    
-    if (searchFilters.category) {
-      filtered = filtered.filter(t => t.category?.toLowerCase().includes(searchFilters.category.toLowerCase()))
-    }
-    
-    if (searchFilters.minAmount) {
-      filtered = filtered.filter(t => Number(t.amount) >= Number(searchFilters.minAmount))
-    }
-    
-    if (searchFilters.maxAmount) {
-      filtered = filtered.filter(t => Number(t.amount) <= Number(searchFilters.maxAmount))
-    }
-    
-    if (searchFilters.dateFrom) {
-      filtered = filtered.filter(t => new Date(t.date) >= new Date(searchFilters.dateFrom))
-    }
-    
-    if (searchFilters.dateTo) {
-      filtered = filtered.filter(t => new Date(t.date) <= new Date(searchFilters.dateTo))
-    }
 
     return filtered
-  }, [transactions, dateFilter, selectedDate, searchQuery, searchFilters])
+  }, [transactions, dateFilter, selectedDate])
 
-  const clearAllFilters = () => {
-    setSearchQuery('')
-    setSearchFilters({
-      type: 'all',
-      category: '',
-      minAmount: '',
-      maxAmount: '',
-      dateFrom: '',
-      dateTo: ''
-    })
-    setShowAdvancedSearch(false)
-  }
+
 
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0)
   const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0)
   const balance = totalIncome - totalExpenses
+  
+  const cashBalance = useMemo(() => {
+    let cash = 0
+    filteredTransactions.forEach(t => {
+      const paymentMethod = (t as any).paymentMethod
+      if (paymentMethod === 'cash') {
+        cash += t.type === 'income' ? Number(t.amount) : -Number(t.amount)
+      }
+    })
+    return cash
+  }, [filteredTransactions])
 
   const handleDownloadPDF = (transactionsToExport: Transaction[]) => {
     generateTransactionsPDF(transactionsToExport, {
@@ -218,40 +178,51 @@ export default function Transactions() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validation
-    const amount = parseFloat(formData.amount)
-    if (!amount || amount <= 0) {
-      toast.error('Please enter a valid amount')
+    // Validate amount
+    const amountValidation = validateAmount(formData.amount)
+    if (!amountValidation.valid) {
+      toast.error(amountValidation.error || 'Invalid amount')
       return
     }
     
-    if (!formData.category) {
-      toast.error('Please select a category')
+    // Validate category
+    if (!formData.category || !validateCategory(formData.category)) {
+      toast.error('Please select a valid category')
       return
     }
     
-    if (!formData.description.trim()) {
-      toast.error('Please enter a description')
+    // Validate description
+    const descValidation = validateDescription(formData.description)
+    if (!descValidation.valid) {
+      toast.error(descValidation.error || 'Invalid description')
       return
     }
     
-    if (!formData.date) {
-      toast.error('Please select a date')
+    // Validate date
+    if (!formData.date || !validateDate(formData.date)) {
+      toast.error('Please select a valid date')
       return
     }
+    
+    const amount = amountValidation.value
 
     let finalCategory = formData.category
 
     // Handle custom category
     if (formData.category === 'Other' && customCategory.trim()) {
+      const sanitizedCategory = sanitizeInput(customCategory.trim())
+      if (!validateCategory(sanitizedCategory)) {
+        toast.error('Invalid category name')
+        return
+      }
       try {
         await addCustomCategory({
-          name: customCategory.trim(),
+          name: sanitizedCategory,
           type: formData.type
         })
-        finalCategory = customCategory.trim()
+        finalCategory = sanitizedCategory
       } catch (error) {
-        finalCategory = customCategory.trim()
+        finalCategory = sanitizedCategory
       }
     } else if (formData.category === 'Other' && !customCategory.trim()) {
       toast.error('Please enter a custom category name')
@@ -266,14 +237,14 @@ export default function Transactions() {
           category: finalCategory,
           description: formData.description.trim(),
           date: formData.date
-        })
+        })de 
         toast.success('Transaction updated successfully!')
       } else {
         await addTransaction({
           amount,
           type: formData.type,
-          category: finalCategory,
-          description: formData.description.trim(),
+          category: sanitizeInput(finalCategory),
+          description: sanitizeInput(formData.description.trim()),
           date: formData.date
         })
         toast.success('Transaction added successfully!')
@@ -289,7 +260,7 @@ export default function Transactions() {
       // Reset form
       setShowModal(false)
       setEditingTransaction(null)
-      setFormData({ amount: '', type: 'expense', category: '', description: '', date: new Date().toISOString().split('T')[0] })
+      setFormData({ amount: '', type: 'expense', category: '', description: '', date: new Date().toISOString().split('T')[0], paymentMethod: 'cash' })
       setShowCustomCategory(false)
       setCustomCategory('')
     } catch (error) {
@@ -376,7 +347,8 @@ export default function Transactions() {
       type: transaction.type,
       category: transaction.category,
       description: transaction.description,
-      date: transaction.date
+      date: transaction.date,
+      paymentMethod: (transaction as any).paymentMethod || 'cash'
     })
     setShowModal(true)
   }
@@ -433,149 +405,15 @@ export default function Transactions() {
 
 
 
-            {/* Search and Filter Section */}
+
+
+            {/* Date Filter Controls */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-6 space-y-4"
+              className="mb-6"
             >
-              {/* Search Bar */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search transactions..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 lg:pl-10 pr-4 py-2.5 lg:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm lg:text-base"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <motion.button
-                      onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 text-sm lg:text-base ${
-                        showAdvancedSearch || Object.values(searchFilters).some(v => v && v !== 'all')
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-300'
-                      }`}
-                    >
-                      <Filter className="w-4 h-4" />
-                      <span className="hidden sm:inline">Filters</span>
-                      <motion.div
-                        animate={{ rotate: showAdvancedSearch ? 180 : 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                      </motion.div>
-                    </motion.button>
-                    <AnimatePresence>
-                      {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
-                        <motion.button
-                          onClick={clearAllFilters}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="px-3 lg:px-4 py-2.5 lg:py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium text-sm lg:text-base"
-                        >
-                          Clear
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Advanced Search Filters */}
-                <AnimatePresence>
-                  {showAdvancedSearch && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 pt-4 border-t border-gray-200"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                          <select
-                            value={searchFilters.type}
-                            onChange={(e) => setSearchFilters({...searchFilters, type: e.target.value as any})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                          >
-                            <option value="all">All Types</option>
-                            <option value="income">Income</option>
-                            <option value="expense">Expense</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                          <input
-                            type="text"
-                            placeholder="Category..."
-                            value={searchFilters.category}
-                            onChange={(e) => setSearchFilters({...searchFilters, category: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Min Amount</label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={searchFilters.minAmount}
-                            onChange={(e) => setSearchFilters({...searchFilters, minAmount: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Max Amount</label>
-                          <input
-                            type="number"
-                            placeholder="999999"
-                            value={searchFilters.maxAmount}
-                            onChange={(e) => setSearchFilters({...searchFilters, maxAmount: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                          <input
-                            type="date"
-                            value={searchFilters.dateFrom}
-                            onChange={(e) => setSearchFilters({...searchFilters, dateFrom: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                          <input
-                            type="date"
-                            value={searchFilters.dateTo}
-                            onChange={(e) => setSearchFilters({...searchFilters, dateTo: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Date Filter Controls */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex flex-wrap gap-2">
@@ -627,53 +465,50 @@ export default function Transactions() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6"
             >
               <motion.div
-                whileHover={{ scale: 1.02, y: -3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
+                whileHover={{ y: -2 }}
+                className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 shadow-md text-white"
               >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{t('totalIncome')}</p>
-                    <p className="text-lg lg:text-2xl font-bold text-green-600 truncate">{formatCurrency(totalIncome)}</p>
-                  </div>
-                  <div className="p-2 lg:p-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <TrendingUp className="w-5 h-5" />
+                  <span className="text-xs opacity-90">{t('income')}</span>
                 </div>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(totalIncome)}</p>
               </motion.div>
 
               <motion.div
-                whileHover={{ scale: 1.02, y: -3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300"
+                whileHover={{ y: -2 }}
+                className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-4 shadow-md text-white"
               >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{t('totalExpenses')}</p>
-                    <p className="text-lg lg:text-2xl font-bold text-red-600 truncate">{formatCurrency(totalExpenses)}</p>
-                  </div>
-                  <div className="p-2 lg:p-3 bg-gradient-to-r from-red-400 to-pink-500 rounded-xl flex-shrink-0">
-                    <TrendingDown className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <TrendingDown className="w-5 h-5" />
+                  <span className="text-xs opacity-90">{t('expense')}</span>
                 </div>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(totalExpenses)}</p>
               </motion.div>
 
               <motion.div
-                whileHover={{ scale: 1.02, y: -3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300 sm:col-span-2 lg:col-span-1"
+                whileHover={{ y: -2 }}
+                className={`bg-gradient-to-br ${balance >= 0 ? 'from-blue-500 to-cyan-600' : 'from-gray-500 to-gray-600'} rounded-xl p-4 shadow-md text-white`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{t('balance')}</p>
-                    <p className={`text-lg lg:text-2xl font-bold truncate ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(balance)}
-                    </p>
-                  </div>
-                  <div className="p-2 lg:p-3 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-xl flex-shrink-0">
-                    <DollarSign className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <Wallet className="w-5 h-5" />
+                  <span className="text-xs opacity-90">{t('balance')}</span>
                 </div>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(balance)}</p>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ y: -2 }}
+                className="bg-gradient-to-br from-orange-500 to-yellow-600 rounded-xl p-4 shadow-md text-white"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Banknote className="w-5 h-5" />
+                  <span className="text-xs opacity-90">Cash</span>
+                </div>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(cashBalance)}</p>
               </motion.div>
             </motion.div>
 
@@ -684,21 +519,14 @@ export default function Transactions() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
             >
-              <div className="p-4 lg:p-6 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <h2 className="text-lg lg:text-xl font-semibold text-gray-800">
-                    {searchQuery ? `Search Results` : formatDateRange()}
+              <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base lg:text-lg font-semibold text-gray-800">
+                    {formatDateRange()}
                   </h2>
-                  <div className="flex items-center space-x-4">
-                    {(searchQuery || Object.values(searchFilters).some(v => v && v !== 'all')) && (
-                      <span className="text-xs lg:text-sm text-emerald-600 font-medium">
-                        Filtered Results
-                      </span>
-                    )}
-                    <span className="text-sm text-gray-500">
-                      {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
+                  <span className="text-xs text-gray-500">
+                    {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
               </div>
 
@@ -708,56 +536,66 @@ export default function Transactions() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="text-gray-500 mt-2">Loading transactions...</p>
                   </div>
-                ) : filteredTransactions.map((transaction, index) => (
+                ) : (
+                  filteredTransactions.map((transaction, index) => (
                   <motion.div
                     key={transaction.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 + index * 0.05 }}
-                    className="p-4 lg:p-6 hover:bg-gray-50 transition-colors"
+                    className="p-3 lg:p-4 hover:bg-gray-50 transition-colors border-l-4 border-transparent hover:border-emerald-500"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 lg:space-x-4 flex-1 min-w-0">
-                        <div className={`p-2 lg:p-3 rounded-lg flex-shrink-0 ${
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className={`p-2 rounded-lg flex-shrink-0 ${
                           transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
                         }`}>
                           {(() => {
                             const IconComponent = getCategoryIcon(transaction.category)
-                            return <IconComponent className={`w-5 h-5 lg:w-6 lg:h-6 ${
+                            return <IconComponent className={`w-4 h-4 lg:w-5 lg:h-5 ${
                               transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                             }`} />
                           })()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-800 text-sm lg:text-base truncate">
+                          <h3 className="font-medium text-gray-800 text-sm truncate">
                             {transaction.description}
                           </h3>
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs lg:text-sm text-gray-500">
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                             <span className="truncate">{transaction.category}</span>
-                            <span className="hidden sm:inline">•</span>
+                            <span>•</span>
                             <span>{formatDate(transaction.date)}</span>
+                            {(transaction as any).paymentMethod && (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
+                                  {(transaction as any).paymentMethod === 'cash' && <Banknote className="w-3 h-3" />}
+                                  {(transaction as any).paymentMethod === 'card' && <CreditCard className="w-3 h-3" />}
+                                  {(transaction as any).paymentMethod === 'bank' && <Wallet className="w-3 h-3" />}
+                                  <span className="capitalize">{(transaction as any).paymentMethod}</span>
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
-                        <div className="text-right">
-                          <span className={`text-sm lg:text-lg font-bold ${
-                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
-                          </span>
-                        </div>
-                        <div className="flex space-x-1 lg:space-x-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-base lg:text-lg font-bold whitespace-nowrap ${
+                          transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
+                        </span>
+                        <div className="flex gap-1">
                           <button
                             onClick={() => handleEdit(transaction)}
-                            className="p-1.5 lg:p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             title="Edit"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(transaction.id)}
-                            className="p-1.5 lg:p-2 text-gray-400 hover:text-red-600 transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -766,7 +604,8 @@ export default function Transactions() {
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                  ))
+                )}
               </div>
 
               {filteredTransactions.length === 0 && (
@@ -816,7 +655,7 @@ export default function Transactions() {
                     onClick={() => {
                       setShowModal(false)
                       setEditingTransaction(null)
-                      setFormData({ amount: '', type: 'expense', category: '', description: '', date: new Date().toISOString().split('T')[0] })
+                      setFormData({ amount: '', type: 'expense', category: '', description: '', date: new Date().toISOString().split('T')[0], paymentMethod: 'cash' })
                       setShowCustomCategory(false)
                       setCustomCategory('')
                     }}
@@ -868,7 +707,7 @@ export default function Transactions() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('amount')}</label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-semibold">₹</span>
                     <input
                       type="number"
                       step="0.01"
@@ -1018,14 +857,64 @@ export default function Transactions() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center space-y-1 ${formData.paymentMethod === 'cash'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                    >
+                      <Banknote className="w-5 h-5" />
+                      <span className="font-medium text-xs">Cash</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'card' }))}
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center space-y-1 ${formData.paymentMethod === 'card'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      <span className="font-medium text-xs">Card</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'bank' }))}
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center space-y-1 ${formData.paymentMethod === 'bank'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      <span className="font-medium text-xs">Bank</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('date')}</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                      type="text"
+                      value={formData.date ? new Date(formData.date).toLocaleDateString('en-GB') : ''}
+                      onChange={(e) => {
+                        const parts = e.target.value.split('/')
+                        if (parts.length === 3) {
+                          const [day, month, year] = parts
+                          if (day && month && year && year.length === 4) {
+                            setFormData(prev => ({ ...prev, date: `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` }))
+                          }
+                        }
+                      }}
+                      onFocus={(e) => e.target.type = 'date'}
+                      onBlur={(e) => e.target.type = 'text'}
                       className="w-full pl-10 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      placeholder="DD/MM/YYYY"
                       required
                     />
                   </div>
@@ -1037,7 +926,7 @@ export default function Transactions() {
                     onClick={() => {
                       setShowModal(false)
                       setEditingTransaction(null)
-                      setFormData({ amount: '', type: 'expense', category: '', description: '', date: new Date().toISOString().split('T')[0] })
+                      setFormData({ amount: '', type: 'expense', category: '', description: '', date: new Date().toISOString().split('T')[0], paymentMethod: 'cash' })
                       setShowCustomCategory(false)
                       setCustomCategory('')
                     }}

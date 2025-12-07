@@ -3,14 +3,13 @@ import { motion } from 'framer-motion'
 import { useTransactions, useBudgets, useGoals, useProfile } from '../hooks/useSupabase'
 import { useAuth } from '../context/AuthContext'
 import { usePreferences } from '../context/PreferencesContext'
-import Sidebar from '../components/Sidebar'
-import { animations, staggerContainer } from '../utils/animations'
+import Sidebar from '../components/layout/Sidebar'
+import { animations } from '../utils/animations'
 import { 
   TrendingUp, 
   TrendingDown,
   CreditCard,
   Target,
-  Calendar,
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
@@ -29,10 +28,10 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Star,
   Activity,
   Bell,
-  Lightbulb
+  Lightbulb,
+  Banknote
 } from 'lucide-react'
 
 interface Transaction {
@@ -65,20 +64,24 @@ export default function Dashboard() {
     let lastMonthIncome = 0
     let lastMonthExpenses = 0
     let currentMonthCount = 0
+    let cashBalance = 0
     
     transactions.forEach(t => {
       const amount = Number(t.amount)
       const isCurrentMonth = t.date.startsWith(currentMonth)
       const isLastMonth = t.date.startsWith(lastMonthStr)
+      const paymentMethod = (t as any).paymentMethod
       
       if (t.type === 'income') {
         totalIncome += amount
         if (isCurrentMonth) monthlyIncome += amount
         if (isLastMonth) lastMonthIncome += amount
+        if (paymentMethod === 'cash') cashBalance += amount
       } else {
         totalExpenses += amount
         if (isCurrentMonth) monthlyExpenses += amount
         if (isLastMonth) lastMonthExpenses += amount
+        if (paymentMethod === 'cash') cashBalance -= amount
       }
       
       if (isCurrentMonth) currentMonthCount++
@@ -94,7 +97,8 @@ export default function Dashboard() {
       incomeChange,
       expenseChange,
       totalTransactions: transactions.length,
-      monthlyTransactions: currentMonthCount
+      monthlyTransactions: currentMonthCount,
+      cashBalance
     }
   }, [transactions])
 
@@ -108,7 +112,7 @@ export default function Dashboard() {
     }, {} as Record<string, number>)
     
     return Object.entries(breakdown)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5)
   }, [transactions])
 
@@ -184,7 +188,7 @@ export default function Dashboard() {
     
     // Find bills that appear monthly (2+ times in 3 months)
     const bills = Object.values(recurringExpenses)
-      .filter(item => item.transactions.length >= 2)
+      .filter((item): item is { transactions: Transaction[], description: string, category: string } => item.transactions.length >= 2)
       .map(item => {
         const avgAmount = item.transactions.reduce((sum, t) => sum + Number(t.amount), 0) / item.transactions.length
         const lastTransaction = item.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
@@ -291,7 +295,6 @@ export default function Dashboard() {
       className="min-h-screen bg-gray-50"
     >
       <Sidebar />
-      <Sidebar isMobile={true} />
       
       <div className="lg:ml-20 transition-all duration-300">
         <div className="p-4 lg:p-6">
@@ -301,18 +304,12 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-8"
+            className="mb-6"
           >
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                  Welcome back, {profile?.full_name || user?.email?.split('@')[0] || 'User'}! 👋
-                </h1>
-                <p className="text-gray-600">Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-              </div>
-              
-              {/* Quick Actions */}
-              </div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-1">
+              Welcome back, {profile?.full_name || user?.email?.split('@')[0] || 'User'}! 👋
+            </h1>
+            <p className="text-sm text-gray-600">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
           </motion.div>
 
           {/* Main Stats Grid */}
@@ -320,73 +317,54 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6"
           >
             <motion.div
               whileHover={{ y: -2 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
+              className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 lg:p-5 shadow-md text-white"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-green-500">
-                  <Wallet className="w-6 h-6 text-white" />
-                </div>
-                <span className={`text-sm font-medium flex items-center ${
-                  stats.totalBalance >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stats.totalBalance >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <Wallet className="w-5 h-5 lg:w-6 lg:h-6" />
+                <span className="text-xs opacity-90">{stats.totalBalance >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(stats.totalBalance)}</h3>
-              <p className="text-gray-600 text-sm">{t('totalBalance')}</p>
+              <h3 className="text-xl lg:text-2xl font-bold mb-1">{formatCurrency(stats.totalBalance)}</h3>
+              <p className="text-xs opacity-90">{t('totalBalance')}</p>
             </motion.div>
 
             <motion.div
               whileHover={{ y: -2 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
+              className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-4 lg:p-5 shadow-md text-white"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-blue-500">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <span className={`text-sm font-medium flex items-center ${
-                  stats.incomeChange >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stats.incomeChange >= 0 ? '+' : ''}{stats.incomeChange.toFixed(1)}%
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6" />
+                <span className="text-xs font-medium">{stats.incomeChange >= 0 ? '+' : ''}{stats.incomeChange.toFixed(1)}%</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(stats.monthlyIncome)}</h3>
-              <p className="text-gray-600 text-sm">{t('monthlyIncome')}</p>
+              <h3 className="text-xl lg:text-2xl font-bold mb-1">{formatCurrency(stats.monthlyIncome)}</h3>
+              <p className="text-xs opacity-90">{t('monthlyIncome')}</p>
             </motion.div>
 
             <motion.div
               whileHover={{ y: -2 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
+              className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-4 lg:p-5 shadow-md text-white"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-red-500">
-                  <TrendingDown className="w-6 h-6 text-white" />
-                </div>
-                <span className={`text-sm font-medium flex items-center ${
-                  stats.expenseChange <= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stats.expenseChange >= 0 ? '+' : ''}{stats.expenseChange.toFixed(1)}%
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <TrendingDown className="w-5 h-5 lg:w-6 lg:h-6" />
+                <span className="text-xs font-medium">{stats.expenseChange >= 0 ? '+' : ''}{stats.expenseChange.toFixed(1)}%</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(stats.monthlyExpenses)}</h3>
-              <p className="text-gray-600 text-sm">{t('monthlyExpenses')}</p>
+              <h3 className="text-xl lg:text-2xl font-bold mb-1">{formatCurrency(stats.monthlyExpenses)}</h3>
+              <p className="text-xs opacity-90">{t('monthlyExpenses')}</p>
             </motion.div>
 
             <motion.div
               whileHover={{ y: -2 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
+              className="bg-gradient-to-br from-orange-500 to-yellow-600 rounded-xl p-4 lg:p-5 shadow-md text-white"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-purple-500">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <Banknote className="w-5 h-5 lg:w-6 lg:h-6" />
+                <span className="text-xs opacity-90">Cash</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{stats.totalTransactions}</h3>
-              <p className="text-gray-600 text-sm">{t('totalTransactions')}</p>
+              <h3 className="text-xl lg:text-2xl font-bold mb-1">{formatCurrency(stats.cashBalance)}</h3>
+              <p className="text-xs opacity-90">Available</p>
             </motion.div>
           </motion.div>
 
@@ -395,36 +373,28 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200"
+            className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200"
           >
-            <div className="p-6 border-b border-gray-100 bg-gray-50">
+            <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
-                    <Target className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-800">{t('goalsProgress')}</h2>
+                <div className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-indigo-600" />
+                  <h2 className="text-base lg:text-lg font-semibold text-gray-800">{t('goalsProgress')}</h2>
                 </div>
-                <span className="text-sm text-gray-500">
-                  {goals.filter(g => !g.completed).length} {t('activeGoals').toLowerCase()}
+                <span className="text-xs text-gray-500">
+                  {goals.filter(g => !g.completed).length} active
                 </span>
               </div>
             </div>
             
             {goals.filter(g => !g.completed).length === 0 ? (
-              <div className="text-center py-12">
-                <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-600 mb-2">No Active Goals</h3>
-                <p className="text-sm text-gray-500 mb-4">Set your first financial goal to start tracking progress</p>
-                <motion.button 
-                  {...animations.button}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300"
-                >
-                  Create Goal
-                </motion.button>
+              <div className="p-8 text-center">
+                <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-base font-medium text-gray-600 mb-1">No Active Goals</h3>
+                <p className="text-sm text-gray-500">Set your first financial goal to start tracking progress</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {goals.filter(g => !g.completed).slice(0, 6).map((goal, index) => {
                   const progress = Number(goal.target_amount) > 0 ? (Number(goal.current_amount) / Number(goal.target_amount)) * 100 : 0
                   const daysLeft = goal.deadline ? Math.ceil((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null
@@ -502,35 +472,32 @@ export default function Dashboard() {
           </motion.div>
 
           {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
             {/* Recent Transactions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-cyan-50">
+              <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-cyan-50">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-                      <CreditCard className="w-5 h-5 text-white" />
-                    </div>
-                    <h2 className="text-xl font-semibold text-gray-800">{t('recentTransactions')}</h2>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-blue-600" />
+                    <h2 className="text-base lg:text-lg font-semibold text-gray-800">{t('recentTransactions')}</h2>
                   </div>
-                  <motion.button 
-                    {...animations.button}
-                    className="text-primary-600 hover:text-primary-700 font-medium text-sm"
-                  >
-                    View All
-                  </motion.button>
+                  <span className="text-xs text-gray-500">Latest 5</span>
                 </div>
               </div>
               <div className="divide-y divide-gray-100">
                 {loading ? (
                   <div className="p-6 text-center text-gray-500">Loading transactions...</div>
                 ) : recentTransactions.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">No transactions yet</div>
+                  <div className="p-8 text-center">
+                    <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-600 mb-1">No transactions yet</p>
+                    <p className="text-xs text-gray-500">Add your first transaction to get started</p>
+                  </div>
                 ) : (
                   recentTransactions.map((transaction, index) => (
                     <motion.div
@@ -538,10 +505,10 @@ export default function Dashboard() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                      className="p-4 hover:bg-gray-50 transition-colors"
+                      className="p-3 hover:bg-gray-50 transition-colors border-l-4 border-transparent hover:border-emerald-500"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <div className={`p-2 rounded-lg ${
                             transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
                           }`}>
@@ -549,12 +516,16 @@ export default function Dashboard() {
                               transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                             }`} />
                           </div>
-                          <div>
-                            <h3 className="font-medium text-gray-800 text-sm">{transaction.description}</h3>
-                            <p className="text-xs text-gray-500">{transaction.category}</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-gray-800 text-sm truncate">{transaction.description}</h3>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>{transaction.category}</span>
+                              <span>•</span>
+                              <span>{formatDate(transaction.date)}</span>
+                            </div>
                           </div>
                         </div>
-                        <span className={`font-semibold text-sm ${
+                        <span className={`font-bold text-sm whitespace-nowrap ${
                           transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
@@ -571,27 +542,25 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                    <BarChart3 className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-800">{t('topCategories')}</h2>
+              <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-600" />
+                  <h2 className="text-base lg:text-lg font-semibold text-gray-800">{t('topCategories')}</h2>
                 </div>
               </div>
               <div className="p-6">
                 {categoryBreakdown.length === 0 ? (
-                  <div className="text-center text-gray-500 py-12">
-                    <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-600 mb-2">No expense data available</h3>
-                    <p className="text-sm text-gray-500">Start adding expenses to see your spending breakdown</p>
+                  <div className="text-center py-8">
+                    <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <h3 className="text-base font-medium text-gray-600 mb-1">No expense data</h3>
+                    <p className="text-sm text-gray-500">Add expenses to see breakdown</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {categoryBreakdown.map(([category, amount], index) => {
-                      const totalExpenses = categoryBreakdown.reduce((sum, [,amt]) => sum + amt, 0)
+                      const totalExpenses = categoryBreakdown.reduce((sum, [,amt]) => sum + (amt as number), 0)
                       const percentage = (amount / totalExpenses) * 100
                       const IconComponent = getCategoryIcon(category)
                       const colorClass = getCategoryColor(index)
@@ -683,81 +652,22 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          {/* Quick Stats Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.35 }}
-            className="mt-8 mb-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className="text-center"
-              >
-                <motion.div 
-                  initial={{ y: 20 }}
-                  animate={{ y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.7 }}
-                  className="text-2xl font-bold mb-1"
-                >
-                  {formatCurrency(stats.monthlyIncome - stats.monthlyExpenses)}
-                </motion.div>
-                <div className="text-indigo-100 text-sm">{t('monthlySavings')}</div>
-              </motion.div>
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="text-center"
-              >
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.8, delay: 0.8, type: "spring", stiffness: 200 }}
-                  className="text-2xl font-bold mb-1"
-                >
-                  {goals.filter(g => !g.completed).length}
-                </motion.div>
-                <div className="text-indigo-100 text-sm">{t('activeGoals')}</div>
-              </motion.div>
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
-                className="text-center"
-              >
-                <motion.div 
-                  initial={{ rotateY: 180, opacity: 0 }}
-                  animate={{ rotateY: 0, opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.9 }}
-                  className="text-2xl font-bold mb-1"
-                >
-                  {stats.monthlyTransactions}
-                </motion.div>
-                <div className="text-indigo-100 text-sm">{t('thisMonthTransactions')}</div>
-              </motion.div>
-            </div>
-          </motion.div>
+
 
           {/* Financial Health & Insights */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
             
             {/* Financial Health Score */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
-                    <Activity className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800">{t('financialHealth')}</h3>
+              <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-green-600" />
+                  <h3 className="text-base lg:text-lg font-semibold text-gray-800">{t('financialHealth')}</h3>
                 </div>
               </div>
               <div className="p-6">
@@ -811,22 +721,20 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.5 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-red-50">
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
-                    <Bell className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800">{t('upcomingBills')}</h3>
+              <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-yellow-50">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-orange-600" />
+                  <h3 className="text-base lg:text-lg font-semibold text-gray-800">{t('upcomingBills')}</h3>
                 </div>
               </div>
               <div className="p-6">
                 {upcomingBills.length === 0 ? (
                   <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 mb-2">No upcoming bills predicted</p>
-                    <p className="text-sm text-gray-500">Add recurring transactions to see bill predictions</p>
+                    <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-600 mb-1">No bills predicted</p>
+                    <p className="text-xs text-gray-500">Add recurring transactions</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -858,21 +766,20 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                    <Lightbulb className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800">{t('smartInsights')}</h3>
+              <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-purple-600" />
+                  <h3 className="text-base lg:text-lg font-semibold text-gray-800">{t('smartInsights')}</h3>
                 </div>
               </div>
               <div className="p-6">
                 {insights.length === 0 ? (
                   <div className="text-center py-8">
-                    <Star className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                    <p className="text-gray-600">You're doing great!</p>
+                    <Lightbulb className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-600 mb-1">No insights yet</p>
+                    <p className="text-xs text-gray-500">Add transactions to get insights</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -910,52 +817,50 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          {/* Recent Activity Summary */}
+          {/* Quick Stats */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.7 }}
-            className="mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
           >
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800">{t('todaySummary')}</h3>
+            <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-base lg:text-lg font-semibold text-gray-800">Quick Stats</h3>
               </div>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-lg font-bold text-green-600">
+            <div className="p-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-xl font-bold text-green-600">
                     {useMemo(() => {
                       const today = new Date().toISOString().split('T')[0]
                       return transactions.filter(t => t.date === today && t.type === 'income').length
                     }, [transactions])}
                   </div>
-                  <div className="text-sm text-gray-600">Income Entries</div>
+                  <div className="text-xs text-gray-600 mt-1">Today Income</div>
                 </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-lg font-bold text-red-600">
+                <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <div className="text-xl font-bold text-red-600">
                     {useMemo(() => {
                       const today = new Date().toISOString().split('T')[0]
                       return transactions.filter(t => t.date === today && t.type === 'expense').length
                     }, [transactions])}
                   </div>
-                  <div className="text-sm text-gray-600">Expense Entries</div>
+                  <div className="text-xs text-gray-600 mt-1">Today Expense</div>
                 </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-lg font-bold text-blue-600">
-                    {budgets.length}
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-xl font-bold text-blue-600">
+                    {stats.monthlyTransactions}
                   </div>
-                  <div className="text-sm text-gray-600">Active Budgets</div>
+                  <div className="text-xs text-gray-600 mt-1">This Month</div>
                 </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-lg font-bold text-purple-600">
-                    {financialHealth.score}/100
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <div className="text-xl font-bold text-purple-600">
+                    {goals.filter(g => !g.completed).length}
                   </div>
-                  <div className="text-sm text-gray-600">Health Score</div>
+                  <div className="text-xs text-gray-600 mt-1">Active Goals</div>
                 </div>
               </div>
             </div>
