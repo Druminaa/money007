@@ -187,8 +187,9 @@ export default function Dashboard() {
       }, {} as Record<string, { transactions: Transaction[], description: string, category: string }>)
     
     // Find bills that appear monthly (2+ times in 3 months)
-    const bills = Object.values(recurringExpenses)
-      .filter((item): item is { transactions: Transaction[], description: string, category: string } => item.transactions.length >= 2)
+    type RecurringItem = { transactions: Transaction[], description: string, category: string }
+    const bills = (Object.values(recurringExpenses) as RecurringItem[])
+      .filter(item => item.transactions.length >= 2)
       .map(item => {
         const avgAmount = item.transactions.reduce((sum, t) => sum + Number(t.amount), 0) / item.transactions.length
         const lastTransaction = item.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
@@ -561,7 +562,7 @@ export default function Dashboard() {
                   <div className="space-y-6">
                     {categoryBreakdown.map(([category, amount], index) => {
                       const totalExpenses = categoryBreakdown.reduce((sum, [,amt]) => sum + (amt as number), 0)
-                      const percentage = (amount / totalExpenses) * 100
+                      const percentage = ((amount as number) / totalExpenses) * 100
                       const IconComponent = getCategoryIcon(category)
                       const colorClass = getCategoryColor(index)
                       
@@ -615,7 +616,7 @@ export default function Dashboard() {
                               <div className="flex items-center justify-between mb-2">
                                 <h3 className="font-semibold text-gray-800 text-lg">{category}</h3>
                                 <div className="text-right">
-                                  <p className="text-lg font-bold text-gray-800">{formatCurrency(amount)}</p>
+                                  <p className="text-lg font-bold text-gray-800">{formatCurrency(amount as number)}</p>
                                   <p className="text-xs text-gray-500">{percentage.toFixed(1)}% of total</p>
                                 </div>
                               </div>

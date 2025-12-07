@@ -3,10 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '../context/ToastContext'
 import { Transaction, useTransactions } from '../hooks/useSupabase'
 import { usePreferences } from '../context/PreferencesContext'
-import { CustomCategory, useCustomCategories } from '../hooks/useCustomCategories'
+import { useCustomCategories } from '../hooks/useCustomCategories'
 import Sidebar from '../components/layout/Sidebar'
 import { ExportMenu } from '../components/ui/ExportMenu'
-import { generateTransactionsPDF } from '../utils/pdfGenerator'
 import { notificationService } from '../services/notificationService'
 import { validateAmount, validateDescription, validateCategory, validateDate, sanitizeInput } from '../utils/validation'
 
@@ -165,15 +164,7 @@ export default function Transactions() {
     return cash
   }, [filteredTransactions])
 
-  const handleDownloadPDF = (transactionsToExport: Transaction[]) => {
-    generateTransactionsPDF(transactionsToExport, {
-      formatCurrency,
-      formatDate,
-      totalIncome,
-      totalExpenses,
-      balance
-    });
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -237,7 +228,7 @@ export default function Transactions() {
           category: finalCategory,
           description: formData.description.trim(),
           date: formData.date
-        })de 
+        })
         toast.success('Transaction updated successfully!')
       } else {
         await addTransaction({
@@ -371,7 +362,6 @@ export default function Transactions() {
       className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50"
     >
       <Sidebar />
-      <Sidebar isMobile={true} />
 
       <div className="lg:ml-20 transition-all duration-300">
         <div className="p-6 lg:p-8 relative">
@@ -389,7 +379,7 @@ export default function Transactions() {
                   <p className="text-gray-600 text-sm lg:text-base">Track and manage all your financial transactions</p>
                 </div>
                 <div className="flex items-center space-x-2 lg:space-x-4">
-                  <ExportMenu transactions={filteredTransactions} onPDFExport={() => handleDownloadPDF(filteredTransactions)} />
+                  <ExportMenu transactions={filteredTransactions} />
                   <motion.button
                     onClick={() => setShowModal(true)}
                     whileHover={{ scale: 1.05 }}

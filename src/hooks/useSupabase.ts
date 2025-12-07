@@ -3,6 +3,8 @@ import { supabase, Transaction, Budget, Goal, UserSettings, UserProfile } from '
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 
+export type { Transaction, Budget, Goal, UserSettings, UserProfile }
+
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
