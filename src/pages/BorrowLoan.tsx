@@ -167,89 +167,86 @@ export default function BorrowLoan() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Sidebar />
-      <Sidebar isMobile={true} />
       
       <div className="lg:ml-20 transition-all duration-300">
-        <div className="p-4 lg:p-6 pt-16 lg:pt-6 max-w-7xl mx-auto">
+        <div className="p-4 lg:p-6 pt-20 lg:pt-6 max-w-7xl mx-auto">
             
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Wallet className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-white">Borrow & Loan</h1>
-                  <p className="text-blue-100 text-sm">Track money you've borrowed and lent</p>
-                </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 lg:p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                <Wallet className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
               </div>
-              <button
-                onClick={() => setShowModal(true)}
-                className="bg-white text-blue-600 px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all flex items-center space-x-2 shadow-md"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="hidden lg:inline">Add Record</span>
-              </button>
+              <div>
+                <h1 className="text-xl lg:text-3xl font-bold text-gray-800">Borrow & Loan</h1>
+                <p className="text-gray-600 text-xs lg:text-sm hidden sm:block">Track money you've borrowed and lent</p>
+              </div>
             </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2.5 lg:px-6 lg:py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all flex items-center space-x-2 shadow-lg w-full sm:w-auto justify-center"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Record</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-            <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-4 shadow-md text-white">
-              <div className="flex items-center space-x-2 mb-2">
-                <ArrowDownLeft className="w-5 h-5" />
-                <span className="text-sm font-medium opacity-90">You Borrowed</span>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-4 mb-6">
+            <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-3 lg:p-4 shadow-md text-white">
+              <div className="flex items-center space-x-1.5 mb-1.5">
+                <ArrowDownLeft className="w-4 h-4 lg:w-5 lg:h-5" />
+                <span className="text-xs lg:text-sm font-medium opacity-90">Borrowed</span>
               </div>
-              <p className="text-2xl lg:text-3xl font-bold">₹{summary.activeBorrowed.toLocaleString()}</p>
-              <p className="text-xs opacity-75 mt-1">Active debt</p>
+              <p className="text-lg lg:text-3xl font-bold truncate">₹{summary.activeBorrowed.toLocaleString()}</p>
+              <p className="text-[10px] lg:text-xs opacity-75 mt-0.5">Active debt</p>
             </div>
 
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 shadow-md text-white">
-              <div className="flex items-center space-x-2 mb-2">
-                <ArrowUpRight className="w-5 h-5" />
-                <span className="text-sm font-medium opacity-90">You Lent</span>
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-3 lg:p-4 shadow-md text-white">
+              <div className="flex items-center space-x-1.5 mb-1.5">
+                <ArrowUpRight className="w-4 h-4 lg:w-5 lg:h-5" />
+                <span className="text-xs lg:text-sm font-medium opacity-90">Lent</span>
               </div>
-              <p className="text-2xl lg:text-3xl font-bold">₹{summary.activeLent.toLocaleString()}</p>
-              <p className="text-xs opacity-75 mt-1">To receive</p>
+              <p className="text-lg lg:text-3xl font-bold truncate">₹{summary.activeLent.toLocaleString()}</p>
+              <p className="text-[10px] lg:text-xs opacity-75 mt-0.5">To receive</p>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-4 shadow-md text-white">
-              <div className="flex items-center space-x-2 mb-2">
-                <Wallet className="w-5 h-5" />
-                <span className="text-sm font-medium opacity-90">Net Position</span>
+            <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-3 lg:p-4 shadow-md text-white">
+              <div className="flex items-center space-x-1.5 mb-1.5">
+                <Wallet className="w-4 h-4 lg:w-5 lg:h-5" />
+                <span className="text-xs lg:text-sm font-medium opacity-90">Net</span>
               </div>
-              <p className="text-2xl lg:text-3xl font-bold">
+              <p className="text-lg lg:text-3xl font-bold truncate">
                 {summary.netPosition >= 0 ? '+' : ''}₹{summary.netPosition.toLocaleString()}
               </p>
-              <p className="text-xs opacity-75 mt-1">{summary.netPosition >= 0 ? 'In your favor' : 'You owe'}</p>
+              <p className="text-[10px] lg:text-xs opacity-75 mt-0.5">{summary.netPosition >= 0 ? 'In favor' : 'You owe'}</p>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl p-4 shadow-md text-white">
-              <div className="flex items-center space-x-2 mb-2">
-                <AlertCircle className="w-5 h-5" />
-                <span className="text-sm font-medium opacity-90">Overdue</span>
+            <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl p-3 lg:p-4 shadow-md text-white">
+              <div className="flex items-center space-x-1.5 mb-1.5">
+                <AlertCircle className="w-4 h-4 lg:w-5 lg:h-5" />
+                <span className="text-xs lg:text-sm font-medium opacity-90">Overdue</span>
               </div>
-              <p className="text-2xl lg:text-3xl font-bold">{summary.overdue}</p>
-              <p className="text-xs opacity-75 mt-1">Pending items</p>
+              <p className="text-lg lg:text-3xl font-bold">{summary.overdue}</p>
+              <p className="text-[10px] lg:text-xs opacity-75 mt-0.5">Pending</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
-            <div className="flex flex-col lg:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="bg-white rounded-xl p-3 lg:p-4 shadow-sm mb-4 lg:mb-6">
+            <div className="flex flex-col gap-2.5">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search person or description..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-9 lg:pl-10 pr-3 py-2 lg:py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 >
                   <option value="all">All Types</option>
                   <option value="borrowed">Borrowed</option>
@@ -258,7 +255,7 @@ export default function BorrowLoan() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -285,28 +282,28 @@ export default function BorrowLoan() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5 lg:space-y-3">
                 {filteredLoans.map((loan) => (
                   <div
                     key={loan.id}
-                    className="bg-white rounded-xl p-5 hover:shadow-md transition-all border border-gray-100"
+                    className="bg-white rounded-xl p-3.5 lg:p-5 hover:shadow-md transition-all border border-gray-100"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start space-x-3 flex-1">
-                        <div className={`p-2.5 rounded-lg shrink-0 ${
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-start space-x-2.5 flex-1 min-w-0">
+                        <div className={`p-2 lg:p-2.5 rounded-lg shrink-0 ${
                           loan.type === 'borrowed' 
                             ? 'bg-red-100 text-red-600' 
                             : 'bg-green-100 text-green-600'
                         }`}>
                           {loan.type === 'borrowed' ? 
-                            <ArrowDownLeft className="w-5 h-5" /> : 
-                            <ArrowUpRight className="w-5 h-5" />
+                            <ArrowDownLeft className="w-4 h-4 lg:w-5 lg:h-5" /> : 
+                            <ArrowUpRight className="w-4 h-4 lg:w-5 lg:h-5" />
                           }
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-800">{loan.person}</h3>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <h3 className="font-semibold text-sm lg:text-base text-gray-800 truncate">{loan.person}</h3>
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] lg:text-xs font-medium shrink-0 ${
                               loan.status === 'completed' ? 'bg-green-100 text-green-700' :
                               loan.status === 'overdue' ? 'bg-red-100 text-red-700' : 
                               'bg-yellow-100 text-yellow-700'
@@ -314,29 +311,29 @@ export default function BorrowLoan() {
                               {loan.status}
                             </span>
                           </div>
-                          <p className={`text-xl font-bold mb-1 ${
+                          <p className={`text-lg lg:text-xl font-bold mb-1 ${
                             loan.type === 'borrowed' ? 'text-red-600' : 'text-green-600'
                           }`}>
                             ₹{loan.amount.toLocaleString()}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span className="bg-gray-100 px-2 py-1 rounded">
+                          <div className="flex items-center gap-1.5 lg:gap-2 text-[10px] lg:text-xs text-gray-500 flex-wrap">
+                            <span className="bg-gray-100 px-1.5 py-0.5 lg:px-2 lg:py-1 rounded text-[10px] lg:text-xs">
                               {categories.find(c => c.value === loan.category)?.icon} {categories.find(c => c.value === loan.category)?.label}
                             </span>
                             {loan.dueDate && (
-                              <span className="flex items-center gap-1">
+                              <span className="flex items-center gap-0.5">
                                 <Clock className="w-3 h-3" />
-                                Due: {new Date(loan.dueDate).toLocaleDateString('en-GB')}
+                                <span className="hidden sm:inline">Due: </span>{new Date(loan.dueDate).toLocaleDateString('en-GB')}
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-1 shrink-0">
+                      <div className="flex flex-col lg:flex-row gap-1 shrink-0">
                         {loan.status === 'active' && (
                           <button
                             onClick={() => markAsCompleted(loan.id)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            className="p-1.5 lg:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Mark completed"
                           >
                             <CheckCircle className="w-4 h-4" />
@@ -360,20 +357,20 @@ export default function BorrowLoan() {
                     </div>
 
                     {loan.description && (
-                      <p className="text-gray-600 text-sm mb-3 pl-11">{loan.description}</p>
+                      <p className="text-gray-600 text-xs lg:text-sm mb-2 lg:mb-3 pl-9 lg:pl-11">{loan.description}</p>
                     )}
                     {(loan.contact || loan.interestRate || loan.paidAmount) && (
-                      <div className="flex flex-wrap gap-3 text-xs text-gray-500 pl-11">
+                      <div className="flex flex-wrap gap-2 lg:gap-3 text-[10px] lg:text-xs text-gray-500 pl-9 lg:pl-11">
                         {loan.contact && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-0.5 lg:gap-1">
                             <Phone className="w-3 h-3" />
-                            {loan.contact}
+                            <span className="truncate max-w-[120px]">{loan.contact}</span>
                           </span>
                         )}
                         {loan.interestRate && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-0.5 lg:gap-1">
                             <TrendingUp className="w-3 h-3" />
-                            {loan.interestRate}% interest
+                            {loan.interestRate}%
                           </span>
                         )}
                         {loan.paidAmount && loan.paidAmount > 0 && (
