@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   type TEXT CHECK (type IN ('income', 'expense')) NOT NULL,
   category TEXT NOT NULL,
   date DATE NOT NULL,
+  payment_method TEXT CHECK (payment_method IN ('cash', 'card', 'bank')) DEFAULT 'cash',
   recurring BOOLEAN DEFAULT FALSE,
   recurring_period TEXT CHECK (recurring_period IN ('daily', 'weekly', 'monthly')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -126,6 +127,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);
+CREATE INDEX IF NOT EXISTS idx_transactions_payment_method ON transactions(payment_method);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, date DESC);
 
 -- =============================================

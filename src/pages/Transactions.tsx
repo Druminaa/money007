@@ -8,6 +8,7 @@ import Sidebar from '../components/layout/Sidebar'
 import { ExportMenu } from '../components/ui/ExportMenu'
 import { notificationService } from '../services/notificationService'
 import { validateAmount, validateDescription, validateCategory, validateDate, sanitizeInput } from '../utils/validation'
+import { sanitizeHtml, RateLimiter } from '../utils/security'
 
 import {
   Plus,
@@ -75,6 +76,7 @@ export default function Transactions() {
 
 
   const { toast } = useToast()
+  const rateLimiter = new RateLimiter()
 
   const getCategoryIcon = (category: string) => {
     const iconMap: Record<string, any> = {
@@ -156,8 +158,7 @@ export default function Transactions() {
   const cashBalance = useMemo(() => {
     let cash = 0
     filteredTransactions.forEach(t => {
-      const paymentMethod = (t as any).paymentMethod
-      if (paymentMethod === 'cash') {
+      if (t.payment_method === 'cash') {
         cash += t.type === 'income' ? Number(t.amount) : -Number(t.amount)
       }
     })
@@ -168,6 +169,12 @@ export default function Transactions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Rate limiting
+    if (!rateLimiter.isAllowed('transaction_submit', 5, 60000)) {
+      toast.error('Too many requests. Please wait a moment.')
+      return
+    }
     
     // Validate amount
     const amountValidation = validateAmount(formData.amount)
@@ -227,16 +234,18 @@ export default function Transactions() {
           type: formData.type,
           category: finalCategory,
           description: formData.description.trim(),
-          date: formData.date
+          date: formData.date,
+          payment_method: formData.paymentMethod
         })
         toast.success('Transaction updated successfully!')
       } else {
         await addTransaction({
           amount,
           type: formData.type,
-          category: sanitizeInput(finalCategory),
-          description: sanitizeInput(formData.description.trim()),
-          date: formData.date
+          category: sanitizeHtml(finalCategory),
+          description: sanitizeHtml(formData.description.trim()),
+          date: formData.date,
+          payment_method: formData.paymentMethod
         })
         toast.success('Transaction added successfully!')
         
@@ -339,12 +348,18 @@ export default function Transactions() {
       category: transaction.category,
       description: transaction.description,
       date: transaction.date,
-      paymentMethod: (transaction as any).paymentMethod || 'cash'
+      paymentMethod: transaction.payment_method || 'cash'
     })
     setShowModal(true)
   }
 
   const handleDelete = async (id: string) => {
+    // Rate limiting for delete operations
+    if (!rateLimiter.isAllowed('transaction_delete', 3, 60000)) {
+      toast.error('Too many delete requests. Please wait.')
+      return
+    }
+    
     if (confirm('Are you sure you want to delete this transaction?')) {
       try {
         await deleteTransaction(id)
@@ -560,14 +575,14 @@ export default function Transactions() {
                             <span className="truncate max-w-[80px] lg:max-w-none">{transaction.category}</span>
                             <span className="hidden sm:inline">•</span>
                             <span className="hidden sm:inline">{formatDate(transaction.date)}</span>
-                            {(transaction as any).paymentMethod && (
+                            {transaction.payment_method && (
                               <>
                                 <span className="hidden lg:inline">•</span>
                                 <span className="flex items-center gap-0.5 lg:gap-1 px-1.5 lg:px-2 py-0.5 bg-gray-100 rounded-full">
-                                  {(transaction as any).paymentMethod === 'cash' && <Banknote className="w-2.5 h-2.5 lg:w-3 lg:h-3" />}
-                                  {(transaction as any).paymentMethod === 'card' && <CreditCard className="w-2.5 h-2.5 lg:w-3 lg:h-3" />}
-                                  {(transaction as any).paymentMethod === 'bank' && <Wallet className="w-2.5 h-2.5 lg:w-3 lg:h-3" />}
-                                  <span className="capitalize text-[10px] lg:text-xs">{(transaction as any).paymentMethod}</span>
+                                  {transaction.payment_method === 'cash' && <Banknote className="w-2.5 h-2.5 lg:w-3 lg:h-3" />}
+                                  {transaction.payment_method === 'card' && <CreditCard className="w-2.5 h-2.5 lg:w-3 lg:h-3" />}
+                                  {transaction.payment_method === 'bank' && <Wallet className="w-2.5 h-2.5 lg:w-3 lg:h-3" />}
+                                  <span className="capitalize text-[10px] lg:text-xs">{transaction.payment_method}</span>
                                 </span>
                               </>
                             )}

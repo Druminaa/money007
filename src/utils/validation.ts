@@ -24,16 +24,29 @@ export const validateEmail = (email: string): boolean => {
   return emailRegex.test(email)
 }
 
-// Amount validation
+// Amount validation with enhanced security
 export const validateAmount = (amount: string | number): { valid: boolean; value: number; error?: string } => {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  // Convert to string and sanitize
+  const amountStr = typeof amount === 'number' ? amount.toString() : sanitizeInput(amount.toString())
+  
+  // Remove any non-numeric characters except decimal point
+  const cleanAmount = amountStr.replace(/[^0-9.-]/g, '')
+  
+  const numAmount = parseFloat(cleanAmount)
   
   if (isNaN(numAmount)) return { valid: false, value: 0, error: 'Invalid amount' }
   if (numAmount <= 0) return { valid: false, value: 0, error: 'Amount must be greater than 0' }
   if (numAmount > 999999999) return { valid: false, value: 0, error: 'Amount too large' }
-  if (!/^\d+(\.\d{1,2})?$/.test(amount.toString())) return { valid: false, value: 0, error: 'Invalid decimal format' }
   
-  return { valid: true, value: numAmount }
+  // Validate decimal format (max 2 decimal places)
+  if (!/^\d+(\.\d{1,2})?$/.test(cleanAmount)) {
+    return { valid: false, value: 0, error: 'Invalid decimal format (max 2 decimal places)' }
+  }
+  
+  // Round to 2 decimal places to prevent floating point issues
+  const roundedAmount = Math.round(numAmount * 100) / 100
+  
+  return { valid: true, value: roundedAmount }
 }
 
 // Date validation

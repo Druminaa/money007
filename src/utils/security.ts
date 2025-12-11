@@ -1,88 +1,105 @@
-// Input sanitization and validation utilities
+// Enhanced security utilities
+import DOMPurify from 'dompurify'
 
-export const sanitizeInput = (input: string): string => {
-  if (typeof input !== 'string') return ''
-  
-  return input
-    .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
-    .slice(0, 1000) // Limit length
-}
-
-export const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email) && email.length <= 254
-}
-
-export const validatePhone = (phone: string): boolean => {
-  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
-  return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
-}
-
-export const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = []
-  
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long')
-  }
-  
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter')
-  }
-  
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter')
-  }
-  
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number')
-  }
-  
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('Password must contain at least one special character')
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  }
-}
-
-export const sanitizeFileName = (fileName: string): string => {
-  return fileName
-    .replace(/[^a-zA-Z0-9.-]/g, '_')
-    .replace(/_{2,}/g, '_')
-    .slice(0, 255)
-}
-
-export const validateFileType = (file: File, allowedTypes: string[]): boolean => {
-  return allowedTypes.includes(file.type)
-}
-
-export const validateFileSize = (file: File, maxSizeInMB: number): boolean => {
-  const maxSizeInBytes = maxSizeInMB * 1024 * 1024
-  return file.size <= maxSizeInBytes
-}
-
-// Rate limiting helper
+// Rate limiting for API calls
 export class RateLimiter {
-  private attempts: Map<string, number[]> = new Map()
+  private requests: Map<string, number[]> = new Map()
   
-  isAllowed(key: string, maxAttempts: number, windowMs: number): boolean {
+  isAllowed(key: string, maxRequests: number = 10, windowMs: number = 60000): boolean {
     const now = Date.now()
-    const attempts = this.attempts.get(key) || []
+    const requests = this.requests.get(key) || []
     
-    // Remove old attempts outside the window
-    const validAttempts = attempts.filter(time => now - time < windowMs)
+    // Remove old requests outside the window
+    const validRequests = requests.filter(time => now - time < windowMs)
     
-    if (validAttempts.length >= maxAttempts) {
+    if (validRequests.length >= maxRequests) {
       return false
     }
     
-    validAttempts.push(now)
-    this.attempts.set(key, validAttempts)
+    validRequests.push(now)
+    this.requests.set(key, validRequests)
     return true
   }
+}
+
+// Input sanitization with strict rules
+export const sanitizeHtml = (input: string): string => {
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true
+  })
+}
+
+// SQL injection prevention for search queries
+export const sanitizeSearchQuery = (query: string): string => {
+  return query
+    .replace(/['"`;\\]/g, '') // Remove dangerous SQL characters
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim()
+    .substring(0, 100) // Limit length
+}
+
+// Validate file uploads (for avatar)
+export const validateFileUpload = (file: File): { valid: boolean; error?: string } => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  const maxSize = 5 * 1024 * 1024 // 5MB
+  
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: 'Only JPEG, PNG, and WebP images are allowed' }
+  }
+  
+  if (file.size > maxSize) {
+    return { valid: false, error: 'File size must be less than 5MB' }
+  }
+  
+  return { valid: true }
+}
+
+// Prevent XSS in dynamic content
+export const escapeHtml = (text: string): string => {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+// Validate and sanitize URLs
+export const sanitizeUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url)
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return ''
+    }
+    return urlObj.toString()
+  } catch {
+    return ''
+  }
+}
+
+// Generate secure random tokens
+export const generateSecureToken = (length: number = 32): string => {
+  const array = new Uint8Array(length)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+// Validate phone numbers
+export const validatePhoneNumber = (phone: string): boolean => {
+  const phoneRegex = /^\+?[\d\s\-\(\)]{10,15}$/
+  return phoneRegex.test(phone.replace(/\s/g, ''))
+}
+
+// Content Security Policy headers (for reference)
+export const CSP_HEADERS = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self'",
+    "connect-src 'self' https://oespmnkmdzhigvbyxyyk.supabase.co",
+    "frame-ancestors 'none'",
+    "base-uri 'self'"
+  ].join('; ')
 }

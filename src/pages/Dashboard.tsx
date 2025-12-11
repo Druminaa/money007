@@ -70,18 +70,16 @@ export default function Dashboard() {
       const amount = Number(t.amount)
       const isCurrentMonth = t.date.startsWith(currentMonth)
       const isLastMonth = t.date.startsWith(lastMonthStr)
-      const paymentMethod = (t as any).paymentMethod
-      
       if (t.type === 'income') {
         totalIncome += amount
         if (isCurrentMonth) monthlyIncome += amount
         if (isLastMonth) lastMonthIncome += amount
-        if (paymentMethod === 'cash') cashBalance += amount
+        if (t.payment_method === 'cash') cashBalance += amount
       } else {
         totalExpenses += amount
         if (isCurrentMonth) monthlyExpenses += amount
         if (isLastMonth) lastMonthExpenses += amount
-        if (paymentMethod === 'cash') cashBalance -= amount
+        if (t.payment_method === 'cash') cashBalance -= amount
       }
       
       if (isCurrentMonth) currentMonthCount++
